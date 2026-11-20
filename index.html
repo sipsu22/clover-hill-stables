@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#6b4a2e">
 <title>Clover Hill Stables</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
@@ -14,6 +17,12 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea{-webkit-user-select:text;user-select:text}
+button,canvas,.mcard,.modecard,.plot,[data-act]{touch-action:manipulation}
+img{-webkit-user-drag:none;pointer-events:none}
+.tl{display:none}
+body.riding footer{display:none}
 body{font-family:"Nunito",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
 h1,h2,h3,.pix{font-family:"Pixelify Sans","Nunito",monospace;font-weight:600;letter-spacing:.3px}
 button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:6px 10px;background:#efe7d3;color:var(--ink);font-weight:700;box-shadow:0 2px 0 #d3c7aa;transition:transform .05s}
@@ -193,6 +202,44 @@ table.results tr.me td{background:#fff1c9;font-weight:800}
 footer{max-width:1100px;margin:0 auto;padding:10px 16px 40px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .empty{padding:30px;text-align:center;color:var(--muted);font-weight:700}
 @media (max-width:520px){.top h1{font-size:18px}.slot{width:150px}}
+@media (max-width:600px){
+  header{box-shadow:none}
+  .top{padding:6px 8px;padding-top:max(6px, env(safe-area-inset-top));gap:6px}
+  .top h1{display:none}
+  .hud{flex-wrap:nowrap;overflow-x:auto;gap:5px;width:100%;scrollbar-width:none}
+  .hud::-webkit-scrollbar{display:none}
+  .chip{font-size:13px;padding:3px 8px}
+  nav#tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;max-width:none;display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+    padding:4px 2px calc(4px + env(safe-area-inset-bottom));background:#6b4a2e;box-shadow:0 -3px 0 #4f3520;overflow:visible}
+  nav#tabs button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0 4px;font-size:10px;line-height:1.1;background:transparent;box-shadow:none;color:#f3e3c6;border-radius:10px}
+  nav#tabs button.on{background:#fff6e4;color:#6b4a2e}
+  nav#tabs .ti{font-size:21px}
+  nav#tabs .tl{display:block}
+  main{padding:8px 6px calc(84px + env(safe-area-inset-bottom))}
+  footer{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .panel{padding:10px 10px;border-radius:12px;margin-bottom:10px}
+  .scene-wrap{padding:0 0 8px;border:0;background:transparent}
+  #scene,#ride{width:calc(100% + 12px);max-width:none;margin-left:-6px;border-radius:0;border-left:0;border-right:0}
+  .daybanner{border-radius:0;margin:0 -6px 0;font-size:13px;padding:6px 8px}
+  .ridehud{font-size:14px;gap:10px;margin-bottom:4px}
+  .scene-ui{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"hint hint hint" "pad . act";gap:8px 6px;margin-top:8px;padding:0 4px}
+  .scene-ui .hint{grid-area:hint;min-width:0;max-width:none;font-size:14px}
+  .scene-ui .dpad{grid-area:pad}
+  .scene-ui .actbtn[data-act="interact"]{grid-area:act;align-self:center}
+  .dpad{grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,54px);gap:5px}
+  .dpad button{font-size:20px;border-radius:12px}
+  .actbtn{width:84px;height:84px;font-size:26px}
+  .keys{display:none}
+  .seedbar{padding:0 4px}
+  .seedbar b{width:100%;text-align:center}
+  .ridectl{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 6px;margin-top:10px}
+  .ridectl .bigjump{height:88px;min-width:120px;font-size:22px;border-radius:44px}
+  .ridectl .sprint{height:88px;min-width:110px;font-size:18px;border-radius:44px}
+  .grid{grid-template-columns:1fr}
+  .modes{grid-template-columns:repeat(2,1fr)}
+  .mbox{padding:14px}
+}
+@media (hover:none){ .keys{display:none} }
 </style>
 </head>
 <body>
@@ -1260,12 +1307,17 @@ function hud(){
     <span class="chip">🐴 ${state.horses.length}/${state.cap}</span><span class="chip">📖 ${found}/${BOOK.length}</span>`;
 }
 const TABS = [['stable','🏡 Farm'],['farm','🧺 Storage'],['breed','💞 Breeding'],['ride','🏇 Riding'],['market','🏷️ Market'],['book','📖 Horse Book']];
-function tabsHTML(){ return TABS.map(([k,l]) => `<button class="${state.tab===k?'on':''}" data-act="tab" data-arg="${k}">${l}</button>`).join(''); }
+function tabsHTML(){ return TABS.map(([k,l]) => { const i = l.indexOf(' '), icon = l.slice(0, i), name = l.slice(i + 1);
+  return `<button class="${state.tab===k?'on':''}" data-act="tab" data-arg="${k}"><span class="ti">${icon}</span> <span class="tn">${name}</span></button>`; }).join(''); }
 
+const isNarrow = () => innerWidth < 600;
+const sceneVW = () => isNarrow() ? 11 * TILE : COLS * TILE;   // phones see 11 x 11 tiles, bigger
+let camX = 0;
+const sceneBuf = document.createElement('canvas');
 function sceneHTML(){
   return `<div class="panel scene-wrap">
     <div class="daybanner" id="dayBanner"></div>
-    <canvas id="scene" width="${COLS*TILE}" height="${ROWS*TILE}"></canvas>
+    <canvas id="scene" width="${sceneVW()}" height="${ROWS*TILE}"></canvas>
     <div class="scene-ui">
       <div class="dpad">
         <button class="u" data-dir="up">▲</button><button class="l" data-dir="left">◀</button>
@@ -1496,6 +1548,7 @@ function render(){
   $('#hud').innerHTML = hud();
   $('#tabs').innerHTML = tabsHTML();
   $('#view').innerHTML = VIEWS[state.tab]();
+  document.body.classList.toggle('riding', !!ride);
   if (openHorse !== null){
     const h = byId(openHorse);
     if (h) $('#mbox').innerHTML = horseModalHTML(h); else closeModal();
@@ -1527,8 +1580,8 @@ function spend(n){
 }
 const ACT = {
   tab(_, arg){ if (ride && arg !== 'ride') endRide(true); state.tab = arg; render(); scrollTo(0,0); },
-  startRide(){ startRide(); },
-  jump(){ rideJump(); },
+  startRide(){ startRide(); if (ride) scrollTo(0, 0); },
+  jump(_, __, b){ if (b && b.dataset.fired){ delete b.dataset.fired; return; } rideJump(); },
   quitRide(){ endRide(true); },
   rideSel(id){ state.rideSel = id; render(); },
   rideMode(_, m){
@@ -2101,7 +2154,7 @@ function walkAndUse(goals){
 const around = (tx, ty) => Object.entries(DIRS).map(([d, [dx,dy]]) => [tx-dx, ty-dy, d]);
 function clickScene(e){
   const cv = e.currentTarget, r = cv.getBoundingClientRect();
-  const tx = Math.floor((e.clientX - r.left) / r.width * COLS);
+  const tx = Math.floor(((e.clientX - r.left) / r.width * cv.width + camX) / TILE);
   let ty = Math.floor((e.clientY - r.top) / r.height * ROWS);
   const P = state.player;
   if (curMap() === 'paddock'){
@@ -2562,14 +2615,24 @@ function frame(time){
   if (rc && state.tab === 'ride'){
     if (!rc.dataset.bound){ rc.dataset.bound = 1; rc.addEventListener('pointerdown', e => { e.preventDefault(); ride ? rideJump() : startRide(); }); }
     if (!$('#modal').classList.contains('on')) updateRide(dt);
-    if (state.tab === 'ride' && document.getElementById('ride')) drawRide(document.getElementById('ride'), time);
+    const rcv = document.getElementById('ride');
+    if (rcv){
+      if (rideBuf.width !== RW || rideBuf.height !== RH){ rideBuf.width = RW; rideBuf.height = RH; }
+      drawRide(rideBuf, time);
+      const rg = rcv.getContext('2d'); rg.imageSmoothingEnabled = false;
+      rg.drawImage(rideBuf, 0, 0, rcv.width, RH, 0, 0, rcv.width, RH);
+    }
     rideHUD();
   }
   const cv = document.getElementById('scene');
   if (cv && state.tab === 'stable'){
     if (!cv.dataset.bound){ cv.dataset.bound = 1; cv.addEventListener('pointerdown', clickScene); }
     if (!$('#modal').classList.contains('on')) updatePlayer(dt);
-    drawScene(cv, time);
+    if (sceneBuf.width !== COLS*TILE){ sceneBuf.width = COLS*TILE; sceneBuf.height = ROWS*TILE; }
+    drawScene(sceneBuf, time);
+    const vw = cv.width, sg = cv.getContext('2d'); sg.imageSmoothingEnabled = false;
+    camX = clamp(Math.round(pl.px*TILE + 8 - vw/2), 0, COLS*TILE - vw);
+    sg.drawImage(sceneBuf, camX, 0, vw, ROWS*TILE, 0, 0, vw, ROWS*TILE);
     const banner = dayBanner();
     const bEl = $('#dayBanner');
     if (bEl && bEl.dataset.t !== banner.text){ bEl.dataset.t = banner.text; bEl.textContent = banner.text; bEl.className = 'daybanner ' + banner.kind; }
@@ -2600,20 +2663,25 @@ document.addEventListener('keydown', e => {
   if (['ArrowRight', 'd', 'D', 'Shift'].includes(e.key) && ride){ e.preventDefault(); sprintHeld = true; }
 });
 document.addEventListener('keyup', e => { if (['ArrowRight', 'd', 'D', 'Shift'].includes(e.key)) sprintHeld = false; });
-document.addEventListener('pointerdown', e => { if (e.target.closest('#sprintBtn')){ e.preventDefault(); sprintHeld = true; } });
-['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, () => { if (document.getElementById('sprintBtn')) sprintHeld = false; }));
+document.addEventListener('pointerdown', e => { const b = e.target.closest('[data-act="jump"]'); if (b){ e.preventDefault(); rideJump(); b.dataset.fired = '1'; } });
+document.addEventListener('contextmenu', e => { if (e.target.closest('canvas, button, .dpad, .mcard')) e.preventDefault(); });
+let wasNarrow = isNarrow();
+addEventListener('resize', () => { if (isNarrow() !== wasNarrow){ wasNarrow = isNarrow(); render(); } });
+let sprintPointer = null;   // which finger is holding Sprint
+document.addEventListener('pointerdown', e => { if (e.target.closest('#sprintBtn')){ e.preventDefault(); sprintHeld = true; sprintPointer = e.pointerId; } });
+['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, e => { if (e.pointerId === sprintPointer){ sprintHeld = false; sprintPointer = null; } }));
 document.addEventListener('keyup', e => {
   const dir = KEY_DIR[e.key];
   if (dir){ const i = held.indexOf(dir); if (i >= 0) held.splice(i, 1); }
 });
 window.addEventListener('blur', () => held.length = 0);
-let padDir = null;   // direction held on the on-screen arrows
+let padDir = null, padPointer = null;   // direction held on the on-screen arrows, and by which finger
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('[data-dir]'); if (!b) return;
-  e.preventDefault(); padDir = b.dataset.dir; held.push(padDir); pl.tap = padDir;
+  e.preventDefault(); padDir = b.dataset.dir; padPointer = e.pointerId; held.push(padDir); pl.tap = padDir;
 });
-['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, () => {
-  if (!padDir) return;
+['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, e => {
+  if (!padDir || e.pointerId !== padPointer) return;
   const i = held.lastIndexOf(padDir); if (i >= 0) held.splice(i, 1);
   padDir = null;
 }));
@@ -2629,10 +2697,21 @@ document.addEventListener('pointerdown', e => {
    Stamina → hearts (training), energy (race), staying strong late in a course
    Gentle  → how high your horse jumps
    ========================================================= */
-const RW = 256, RH = 128, GROUND = 112, RIDE_X = 44, PX_M = 16;
+const RW = 256, RIDE_X = 44, PX_M = 16;
+let RH = 128, GROUND = 112;   // on phones the picture grows taller to fill the screen
+function setRideSize(){
+  if (ride) return;           // never change size in the middle of a ride
+  if (isNarrow()){
+    const free = innerHeight - 300;                       // room left after the top bar, buttons and tabs
+    RH = clamp(Math.round(free * rideVW() / (innerWidth + 12)), 128, 232);
+  } else RH = 128;
+  GROUND = RH - 16;
+}
 let ride = null;          // the ride in progress
 let rideBuffer = 0;       // a jump pressed just before landing still counts
 let sprintHeld = false;
+const rideBuf = document.createElement('canvas');
+const rideVW = () => isNarrow() ? 176 : RW;   // phones: zoomed in, still ~130 px of look-ahead
 
 const RIDE_MODES = {
   training: {name:'Training ring', icon:'🏋️', desc:'Endless practice jumps. Pick what to train: your horse gets better at it the farther you ride!'},
@@ -3012,7 +3091,8 @@ function drawBackdrop(g, mode, scroll, time){
     for (let i=-1; i<9; i++){                       // nearer trunks
       const base = Math.floor(scroll*.5/40) + i, x = Math.round(base*40 - scroll*.5 + hash(base)*20);
       px(g, '#5a3a22', x, 0, 6, GROUND - 14); px(g, '#7a5232', x+1, 0, 2, GROUND - 14);
-      px(g, '#3f7a26', x - 10, 0, 26, 10 + Math.round(hash(base+7)*10));
+      const leaves = 10 + Math.round(hash(base+7)*10) + Math.round((RH - 128) * .45);
+      px(g, '#3f7a26', x - 10, 0, 26, leaves); px(g, '#4f8a2b', x - 6, leaves, 18, 4); px(g, '#4f8a2b', x - 12, Math.round(leaves*.5), 6, 6);
     }
     px(g, '#5e9c3a', 0, GROUND - 16, RW, 16);
     for (let x = -((scroll) % 14); x < RW; x += 14) px(g, '#3f7a26', Math.round(x), GROUND - 12, 2, 4);
@@ -3021,12 +3101,13 @@ function drawBackdrop(g, mode, scroll, time){
     return;
   }
   // sky
-  px(g, '#bfe3f7', 0, 0, RW, RH); px(g, '#d6eefa', 0, 50, RW, 30);
+  px(g, '#bfe3f7', 0, 0, RW, RH); px(g, '#d6eefa', 0, GROUND - 62, RW, 30);
+  const tallRace = mode === 'race' && RH >= 170, trackTop = GROUND - (tallRace ? 74 : 26);
   const cloud = mapCanvas('jump:cloud', JUMP_SPR.cloud, JUMP_COLORS, null);
   for (let i=0; i<4; i++){ const x = ((i*110 - scroll*.1) % 440 + 440) % 440 - 40; g.drawImage(cloud, Math.round(x), 10 + (i%2)*14); }
   if (mode === 'jumping'){
     // grandstand full of fans
-    const top = 46, bot = GROUND - 26;
+    const top = GROUND - 66 - Math.round((RH - 128) * .55), bot = GROUND - 26;   // a bigger crowd on tall screens
     px(g, '#8a5a3a', 0, top - 6, RW, bot - top + 6); px(g, '#c0453a', 0, top - 8, RW, 3);
     for (let y = top; y < bot; y += 5){
       px(g, '#6e4a30', 0, y + 3, RW, 1);
@@ -3048,17 +3129,18 @@ function drawBackdrop(g, mode, scroll, time){
     return;
   }
   // hills for training and the race
+  const hillBase = mode === 'race' ? trackTop - 2 : GROUND - 28;
   for (let x=0; x<RW; x++){
     const wx = x + scroll*.25;
     const hgt = 22 + Math.round(Math.sin(wx/37)*8 + Math.sin(wx/13)*3);
-    px(g, '#8fbf62', x, GROUND - 28 - hgt, 1, hgt + 30);
+    px(g, '#8fbf62', x, hillBase - hgt, 1, hgt + 30);
   }
   if (mode === 'race'){
-    for (let i=-1; i<8; i++){ const base = Math.floor(scroll*.4/38) + i, x = Math.round(base*38 - scroll*.4); g.drawImage(mapCanvas('tree', TREE_SPR, NATURE_COLORS), x, GROUND - 52 + Math.round(hash(base)*6)); }
-    px(g, '#7fb257', 0, GROUND - 26, RW, RH);
-    for (let x = -((scroll) % 32); x < RW; x += 32) px(g, '#8cc063', Math.round(x), GROUND - 26, 16, RH);
-    for (let x = -((scroll*1) % 24); x < RW; x += 24) px(g, '#f1ebdc', Math.round(x), GROUND - 34, 2, 10);
-    px(g, '#f1ebdc', 0, GROUND - 32, RW, 2);
+    for (let i=-1; i<8; i++){ const base = Math.floor(scroll*.4/38) + i, x = Math.round(base*38 - scroll*.4); g.drawImage(mapCanvas('tree', TREE_SPR, NATURE_COLORS), x, trackTop - 26 + Math.round(hash(base)*6)); }
+    px(g, '#7fb257', 0, trackTop, RW, RH);
+    for (let x = -((scroll) % 32); x < RW; x += 32) px(g, '#8cc063', Math.round(x), trackTop, 16, RH);
+    for (let x = -((scroll*1) % 24); x < RW; x += 24) px(g, '#f1ebdc', Math.round(x), trackTop - 8, 2, 10);
+    px(g, '#f1ebdc', 0, trackTop - 6, RW, 2);
     return;
   }
   for (let x = -((scroll*.5) % 24); x < RW; x += 24) px(g, '#f1ebdc', Math.round(x), GROUND - 30, 2, 14);
@@ -3084,12 +3166,12 @@ function drawObstacle(g, o, sx, lane){
     g.drawImage(o.c, o.w - 4, 0, 4, o.c.height, sx + o.w - 4, y, 4, o.c.height);
   } else g.drawImage(o.c, sx, y);
 }
-function drawFinish(g, sx, lanes){
+function drawFinish(g, sx, topLane){
   if (sx < -10 || sx > RW + 10) return;
-  const top = GROUND - 44;
-  px(g, '#f6f1e6', sx, top, 2, 50 + lanes); px(g, '#f6f1e6', sx + 22, top, 2, 50 + lanes);
+  const top = GROUND - 44 + Math.min(0, topLane);
+  px(g, '#f6f1e6', sx, top, 2, RH - top); px(g, '#f6f1e6', sx + 22, top, 2, RH - top);
   for (let i=0; i<12; i++) for (let j=0; j<2; j++) px(g, (i + j) % 2 ? '#222' : '#fff', sx + 2 + i*2 - 2, top + j*3, 2, 3);
-  for (let y = GROUND - 2; y < RH; y += 4) px(g, '#ffffff', sx + 10, y, 3, 2);
+  for (let y = GROUND - 2 + Math.min(0, topLane); y < RH; y += 4) px(g, '#ffffff', sx + 10, y, 3, 2);
 }
 function drawRider(g, look_, shirt, x, y, frame, blink){
   const hc = horseCanvas({...look_, rug: null, frame});
@@ -3109,9 +3191,10 @@ function drawRide(cv, time){
   const running = r && r.running && r.ready <= 0;
   const gallop = t => (Math.floor(t * 10) % 2 ? 'b' : 'c');
   // lanes: the race has six riders side by side, everything else has one
-  const lanes = r && r.mode === 'race' ? [-21, -14, -7, 0, 7, 14] : [0];
-  const rivalLane = [-21, -14, -7, 7, 14];
-  if (r && r.finishWX) drawFinish(g, Math.round(r.finishWX - r.scroll + RIDE_X + 16), lanes[lanes.length-1]);
+  const tall = RH >= 170;
+  const rivalLane = tall ? [-60, -48, -36, -24, -12] : [-21, -14, -7, 7, 14];
+  const lanes = r && r.mode === 'race' ? [...rivalLane, 0].sort((a, b) => a - b) : [0];
+  if (r && r.finishWX) drawFinish(g, Math.round(r.finishWX - r.scroll + RIDE_X + 16), lanes[0]);
   for (const lane of lanes){
     // obstacles stretch across every lane
     if (r) for (const o of r.obstacles){
@@ -3158,7 +3241,7 @@ function drawRide(cv, time){
     if (r.ready > 0){
       g.font = 'bold 22px "Pixelify Sans", monospace'; g.fillStyle = '#fff'; g.strokeStyle = '#4f3520'; g.lineWidth = 3;
       const txt = r.ready > .5 ? 'Ready...' : 'GO!';
-      g.strokeText(txt, RW/2, 50); g.fillText(txt, RW/2, 50);
+      g.strokeText(txt, RW/2, GROUND - 62); g.fillText(txt, RW/2, GROUND - 62);
     }
   }
 }
@@ -3188,6 +3271,7 @@ function trophyShelf(){
     `<div class="trophy"><span class="tbig">${PLACE[x.place-1]}</span><b>${LEVELS[x.lvl].name}</b><span>${RIDE_MODES[x.mode].icon} ${RIDE_MODES[x.mode].name}</span><small>${esc(x.horse)} · Day ${x.day}</small></div>`).join('')}</div></div>`;
 }
 function rideView(){
+  setRideSize();
   const riders = state.horses.filter(h => !isFoal(h));
   if (!state.rideSel || !byId(state.rideSel) || isFoal(byId(state.rideSel))){
     const first = riders.find(h => !canRide(h)) || riders[0];
@@ -3199,11 +3283,11 @@ function rideView(){
   if (ride){
     return `<div class="panel scene-wrap">
       <div class="ridehud" id="rideHud"></div>
-      <canvas id="ride" width="${RW}" height="${RH}"></canvas>
-      <div class="scene-ui">
-        <button class="primary actbtn" data-act="jump" style="width:auto;padding:0 28px;border-radius:32px">⤴ Jump</button>
-        ${ride.mode === 'race' ? `<button class="gold actbtn" id="sprintBtn" style="width:auto;padding:0 24px;border-radius:32px">⚡ Sprint (hold)</button>` : ''}
-        <button class="danger" data-act="quitRide">${ride.comp ? 'Give up' : 'Stop riding'}</button>
+      <canvas id="ride" width="${rideVW()}" height="${RH}"></canvas>
+      <div class="scene-ui ridectl">
+        ${ride.mode === 'race' ? `<button class="gold actbtn sprint" id="sprintBtn" style="width:auto;padding:0 24px;border-radius:32px">⚡ Sprint</button>` : ''}
+        <button class="danger" data-act="quitRide">${ride.comp ? 'Give up' : 'Stop'}</button>
+        <button class="primary actbtn bigjump" data-act="jump" style="width:auto;padding:0 28px;border-radius:32px">⤴ Jump</button>
       </div>
       <div class="keys">Jump: <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> or tap the picture${ride.mode === 'race' ? ' · Sprint: hold <kbd>→</kbd> <kbd>D</kbd> or <kbd>Shift</kbd>' : ''}${ride.mode === 'trail' ? " · Don't jump under low branches!" : ''}</div>
     </div>`;
@@ -3231,7 +3315,7 @@ function rideView(){
         `<button class="modecard ${k===mode?'on':''}" data-act="rideMode" data-arg="${k}"><span class="micon">${x.icon}</span><b>${x.name}</b>${x.comp ? '<small>Competition</small>' : '<small>Practice</small>'}</button>`).join('')}</div>
       <p>${M.desc}</p>${options}</div>
     <div class="panel scene-wrap">
-      <canvas id="ride" width="${RW}" height="${RH}"></canvas>
+      <canvas id="ride" width="${rideVW()}" height="${RH}"></canvas>
       <div class="scene-ui">
         <button class="primary" data-act="startRide" ${why ? 'disabled' : ''} style="font-size:18px;padding:10px 22px">${M.icon} ${M.comp ? 'Enter' : 'Start'}${h ? ' with ' + esc(h.name) : ''}${M.comp ? ` (${LEVELS[lvl].fee}🪙)` : ''}</button>
         <span class="hint">${why ? '⚠️ ' + why + (why === 'Needs a saddle' ? ' (buy one at the 🏷️ Market, then put it on from the horse card)' : '') : 'Ready to go!'}</span>
