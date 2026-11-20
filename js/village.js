@@ -7,8 +7,9 @@ import { mulberry } from './util.js';
 import { mapCanvas } from './sprites.js';
 import { state } from './state.js';
 import { toast } from './ui.js';
-import { COLS, ROWS, TILE, bfs, facing, goTo, has2, pl, walkAndUse } from './world.js';
-import { NATURE_COLORS, TREE_SPR, drawHighlight, drawOverlays, farmerThing, ledThing, px } from './world-draw.js';
+import { FARMHAND_NAME, isHired, openHireBoard } from './farmhand.js';
+import { COLS, ROWS, TILE, around, bfs, facing, goTo, has2, pl, walkAndUse } from './world.js';
+import { NATURE_COLORS, TREE_SPR, drawHighlight, drawOverlays, farmerThing, farmhandCanvas, ledThing, px } from './world-draw.js';
 import { openRidingMenu } from './riding.js';
 
 export const MARKET_BLD = {x0: 0, y0: 1, x1: 6, y1: 4}, MARKET_DOOR = [3, 4];
@@ -18,13 +19,14 @@ export const ARENA_GATE = [[8, 7], [9, 7]];
 export const ROAD_X = [8, 9];
 export const V_TREES = [[0, 0], [15, 0], [0, 6], [15, 6]];
 export const LAMPS = [[6, 6], [11, 6]];
+export const NOTICE = [4, 6];          // 📋 help wanted: hire the farmhand here
 const inRect = (r, x, y) => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1;
 const at = ([a, b], x, y) => a === x && b === y;
 
 export function walk(x, y){
   if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
   if (inRect(MARKET_BLD, x, y) || inRect(HEART_BLD, x, y) || inRect(ARENA, x, y)) return false;
-  return !has2(V_TREES, x, y) && !has2(LAMPS, x, y);
+  return !has2(V_TREES, x, y) && !has2(LAMPS, x, y) && !at(NOTICE, x, y);
 }
 /** Stepping into a door or off the map. Returns true if we went somewhere. */
 export function door(nx, ny){
@@ -36,12 +38,14 @@ export function door(nx, ny){
 export function interact(fx, fy, led){
   if (door(fx, fy)) return;
   if (has2(ARENA_GATE, fx, fy)) return openRidingMenu(led);
+  if (at(NOTICE, fx, fy)) return openHireBoard();
   toast('Walk to a door, or bring a saddled horse to the arena gate!');
 }
 export function hint(fx, fy, led){
   if (fy < 0 && ROAD_X.includes(fx)) return '↑ Back to the farm';
   if (at(MARKET_DOOR, fx, fy)) return 'Press E to enter the Market Hall 🏷️';
   if (at(HEART_DOOR, fx, fy)) return 'Press E to enter the Heart Barn 💞';
+  if (at(NOTICE, fx, fy)) return isHired() ? `📋 Notice board · ${FARMHAND_NAME} works for you` : '📋 Help wanted! Press E to hire a farmhand';
   if (has2(ARENA_GATE, fx, fy)) return led ? `Press E to ride ${led.name} in the arena 🏇` : '🏇 Riding arena: lead a saddled horse here to ride';
   return led ? `${led.name} is with you. The arena gate is at the bottom 🏇` : 'The village: 🏷️ market, 💞 heart barn and 🏇 riding arena';
 }
@@ -51,6 +55,7 @@ export function click(tx, ty){
   if (inRect(HEART_BLD, tx, ty)) return walkAndUse([[HEART_DOOR[0], HEART_DOOR[1] + 1, 'up']]);
   if (inRect(ARENA, tx, ty)) return walkAndUse(ARENA_GATE.map(([x, y]) => [x, y - 1, 'down']));
   if (ty === 0 && ROAD_X.includes(tx)) return walkAndUse([[tx, 0, 'up']]);
+  if (at(NOTICE, tx, ty)) return walkAndUse(around(tx, ty).filter(([x, y]) => walk(x, y)));
   if (walk(tx, ty)){ pl.path = bfs(P.x, P.y, (x, y) => x === tx && y === ty) || []; pl.after = null; }
 }
 
@@ -106,6 +111,13 @@ function buildVillage(){
   g.drawImage(jump, 3 * TILE, 8 * TILE + 6); g.drawImage(jump, 11 * TILE, 9 * TILE); g.drawImage(jump, 6 * TILE, 9 * TILE + 8);
   return c;
 }
+function noticeBoard(g, [x, y]){
+  const X = x * TILE, Y = y * TILE;
+  px(g, '#5e3a1a', X + 3, Y + 6, 2, 10); px(g, '#5e3a1a', X + 11, Y + 6, 2, 10);
+  px(g, '#5e3a1a', X, Y - 6, 16, 13); px(g, '#9a6a3a', X + 1, Y - 5, 14, 11);
+  px(g, '#fbf5e6', X + 3, Y - 4, 5, 6); px(g, '#fbf5e6', X + 9, Y - 3, 4, 5); px(g, '#d0533f', X + 5, Y - 4, 1, 1);
+  px(g, '#9a8a78', X + 4, Y - 2, 3, 1); px(g, '#9a8a78', X + 4, Y, 3, 1); px(g, '#9a8a78', X + 10, Y - 1, 2, 1);
+}
 function lamp(g, [x, y]){
   const X = x * TILE + 7, Y = y * TILE;
   px(g, '#3a3330', X, Y - 6, 2, 20); px(g, '#3a3330', X - 2, Y + 13, 6, 2);
@@ -121,6 +133,8 @@ export function draw(g, time){
   }
   const things = V_TREES.map(([x, y]) => ({y, draw: () => g.drawImage(mapCanvas('tree', TREE_SPR, NATURE_COLORS), x * TILE, y * TILE - 2)}));
   for (const l of LAMPS) things.push({y: l[1], draw: () => lamp(g, l)});
+  things.push({y: NOTICE[1], draw: () => noticeBoard(g, NOTICE)});
+  if (!isHired()) things.push({y: NOTICE[1] - .1, draw: () => g.drawImage(farmhandCanvas('down', 0), (NOTICE[0] - 1) * TILE + 1, NOTICE[1] * TILE - 3)});
   things.push(farmerThing(g));
   const lt = ledThing(g, time); if (lt) things.push(lt);
   things.sort((a, b) => a.y - b.y).forEach(t => t.draw());

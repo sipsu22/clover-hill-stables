@@ -29,7 +29,7 @@ export const breedChance = (a, b) => clamp(.2 + (natureMatch(a, b) + getBond(a, 
 
 // stalls are numbered by the horse's place in the list: 0-7 top row, 8-15 bottom row
 export const stallNeighbors = (i, j) => Math.floor(i / 8) === Math.floor(j / 8) && Math.abs(i - j) === 1;
-const inStall = h => !h.out && !h.pen && state.player.leading !== h.id;
+const inStall = h => !h.out && !h.pen && !h.withHand && state.player.leading !== h.id;
 
 /** Called every second while playing: grow friendships. */
 export function updateBonds(sec){

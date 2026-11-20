@@ -4,10 +4,11 @@ import { horseImg } from './sprites.js';
 import { BUNDLES, CROPS, DNA_COST, FOOD, RUG_COLORS, RUG_KINDS, SADDLES, SAVE_KEY, SHOP, T, isDaytime, rugOK } from './data.js';
 import { byId, discover, isFoal, look, newGame, plotCost, saddleOf, stableCost, state, value } from './state.js';
 import { closeModal, nameModal, pop, showModal, toast } from './ui.js';
+import { FARMHAND_NAME, hire, letGo } from './farmhand.js';
 import { priceOf } from './shop.js';
 import { openHorse, render } from './views.js';
 import { curMap, facing, freeSpot, horseNear, interact, resetLeadPos, stallAt } from './world.js';
-import { startCeremony } from './breeding.js';
+import { penAt, startCeremony } from './breeding.js';
 import { RIDE_MODES, clearRide, endRide, ride, rideJump, startRide } from './riding.js';
 import { save } from './game.js';
 
@@ -48,6 +49,8 @@ export const ACT = {
     toast('🧬 DNA test kit added. Use it from any horse card.', 'good'); render();
   },
   usePotion(){ startCeremony(); },
+  hireHand(){ hire(); render(); },
+  fireHand(){ letGo(); render(); },
   buyPlot(){ if (state.plots.length < 12 && spend(plotCost())){ state.plots.push({crop:null,at:0}); toast('New field ready to plant!','good'); render(); } },
   buyPlotHere(){ closeModal(); ACT.buyPlot(); },
   seed(_, k){ state.seed = k; render(); },
@@ -147,16 +150,18 @@ export const ACT = {
     if (!isDaytime()) return toast('🌙 It\'s night. The horses are sleeping!');
     if (P.carry) return toast('Put down what you are carrying first.');
     if (P.leading) return toast(`You're already leading ${byId(P.leading).name}. One horse at a time!`);
+    if (h.withHand) return toast(`${FARMHAND_NAME} is already taking ${h.name} to the paddock.`);
     // no teleporting: you must be standing at the horse's stall, or right next to it in the paddock
     const [fx, fy] = facing();
     const atStall = curMap() === 'barn' && state.horses[stallAt(fx, fy)] === h && !h.out && !h.pen;
     const atPaddock = curMap() === 'paddock' && h.out && (horseNear(fx, fy) === h || horseNear(P.x, P.y) === h);
-    if (!atStall && !atPaddock)
+    const atPen = curMap() === 'heart' && h.pen && penAt(fx, fy) === h.pen;
+    if (!atStall && !atPaddock && !atPen)
       return toast(`Walk to ${h.name} first: ${h.sex==='F'?'her':'his'} stall in the barn, or next to ${h.sex==='F'?'her':'him'} in the paddock.`);
-    h.out = false; P.leading = id;
+    h.out = false; delete h.pen; P.leading = id;
     if (openHorse !== null) closeModal();
     resetLeadPos();
-    toast(atStall ? `🐴 ${h.name} is following you. The paddock is past the fields →, the village is south ↓`
+    toast(atPen ? `🐴 ${h.name} is following you again.` : atStall ? `🐴 ${h.name} is following you. The paddock is past the fields →, the village is south ↓`
                   : `🐴 ${h.name} is following you. Press E in the barn to put ${h.sex==='F'?'her':'him'} back in the stall.`, 'good');
     render();
   },

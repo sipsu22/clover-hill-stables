@@ -109,8 +109,7 @@ export const T = {pregnancy:45, grow:90, rest:30, brush:15}; // seconds
 
 /* ---------- day & night ----------
    One game day = 12 real minutes, from 6:00 in the morning to midnight.
-   Horses must be out in the paddock by 12:00 (about 4 real minutes after
-   sunrise), and come back in at 21:00. */
+   Horses need some time in the paddock during the day; at 21:00 they all come back in. */
 export const DAY_MS = 12 * 60 * 1000, MORNING_END = 12, NIGHT = 21;
 export function clock(t = now()){
   const e = Math.max(0, t - state.dayEpoch);

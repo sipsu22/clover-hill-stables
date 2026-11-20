@@ -70,12 +70,14 @@ describe('the day banner', () => {
     window.innerWidth = 1024;
     expect(long.kind).toBe('morning');
     expect(short.text.length).toBeLessThan(long.text.length);
-    expect(short.text).toContain('12:00');
+    expect(short.text).toContain('0/2 out today');
   });
 
-  it('warns about horses still inside after the deadline', () => {
-    setHour(14);
-    expect(dayBanner()).toMatchObject({kind: 'sad'});
-    expect(dayBanner().text).toMatch(/stuck inside/);
+  it('counts how many horses have been outside today, any time of the day', () => {
+    setHour(16);
+    S.byId(1).outToday = true;
+    expect(dayBanner().text).toMatch(/1 of 2 horses have been outside today/);
+    S.byId(2).outToday = true;
+    expect(dayBanner()).toMatchObject({kind: 'good'});
   });
 });

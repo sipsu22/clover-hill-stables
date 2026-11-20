@@ -56,6 +56,7 @@ function expectCurrentShape(s){
   expect(s.stableHand).toBeUndefined();          // removed feature: must be cleaned up
   expect(typeof s.inv.potion).toBe('number');    // love potions (breeding in the Heart Barn)
   expect(typeof s.bonds).toBe('object');         // friendships between horses
+  expect(s.farmhand).toMatchObject({hired: expect.any(Boolean)});   // the farmhand (not hired in old saves)
   expect(s.sel).toBeUndefined();                 // old breeding-tab selection is gone
   expect(s.decor.some(d => d.x === 15 && d.y === 7)).toBe(false);   // the Horse Book stand's tile is free
 }
@@ -165,6 +166,7 @@ describe('each piece an old save can be missing is filled in', () => {
     ['trophies', s => delete s.trophies,       s => expect(s.trophies).toEqual([])],
     ['inv.potion', s => delete s.inv.potion,   s => expect(s.inv.potion).toBe(1)],
     ['bonds',    s => delete s.bonds,          s => expect(s.bonds).toEqual({})],
+    ['farmhand', s => delete s.farmhand,       s => expect(s.farmhand).toEqual({hired: false})],
     ['decor on the book stand tile', s => s.decor.push({id: 77, type: 'cat', x: 15, y: 7}), s => expect(s.decor.find(d => d.id === 77)).toMatchObject({type: 'cat'})],
   ];
   it.each(cases)('%s', (_, remove, check) => {

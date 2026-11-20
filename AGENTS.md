@@ -29,13 +29,14 @@ js/
   data.js         game data and rules tables: crops, shop, saddles, rugs, weather, bundles, day clock
   state.js        the saved game `state`, horse rules (value, mood, readiness, hunger/happiness decay)
   affinity.js     friendships between horses (bonds), nature match, love-potion success chance
+  farmhand.js     Sam the farmhand: hiring, daily wage, dressing horses, walking them out, feeding
   game.js         tick(), day/night + paddock rules (dayRules), save()/load() with save migrations
   ui.js           toasts, popups (showModal(html, after, refresh) / refreshModal / closeModal), HTML helpers
   shop.js         Market Hall stalls: daily rotating stock, daily prices (priceOf), stall popups
   views.js        top bar, the world view (or the ride), horse cards, Horse Book + build popups, render()
   actions.js      ACT: everything a button can do (data-act="…"), click/keyboard dispatch
   world.js        the walkable world: barn / farm / paddock rules, PLACES registry, pathfinding, doors, leading horses
-  village.js      place: the village (Market Hall door, Heart Barn door, riding arena gate)
+  village.js      place: the village (Market Hall door, Heart Barn door, riding arena gate, notice board)
   market-map.js   place: inside the Market Hall (stalls you walk up to)
   breeding.js     place: the Heart Barn (pens, love table, potion ceremony with curtain + big heart)
   world-draw.js   drawing the barn, farm, paddock, weather and sky (places draw themselves)
@@ -122,13 +123,19 @@ If `scripts/capture-save.mjs` stops working because modules were renamed, update
   are new every morning. A bought horse follows you home on foot (it is not teleported into the barn).
 - **Riding** starts at the arena gate in the village with the horse you led there.
 
-- **Horses never teleport to the paddock.** Every morning the player must walk each horse from its
-  stall, out of the barn, past the fields, to the paddock. Leading can only start at the horse's own
-  stall, next to it in the paddock, or at its Heart Barn pen. A horse bought at the market follows you
-  home. No auto turn-out helpers. The only automatic move
-  allowed is horses walking back to their stalls at 21:00. (Covered by tests in `tests/world.test.js`
-  and `tests/game.test.js`.)
-- Mornings must not feel stressful: the paddock deadline is 12:00, about 4 real minutes after sunrise.
+- **Horses never teleport.** Horses only move when someone visibly leads them: the player (leading
+  starts at the horse's own stall, next to it in the paddock, or from its card at a Heart Barn pen; a horse
+  bought at the market follows the player home), or **Sam the farmhand** (`farmhand.js`). The only automatic
+  move is horses walking back to their stalls at 21:00. (Tests: `world.test.js`, `game.test.js`, `farmhand.test.js`.)
+- **The farmhand** (hired at the village notice board for a daily wage, paid each morning; leaves if unpaid)
+  exists because caring for many horses got to be too much work. Sam puts the right sheet on (from rugs the
+  player owns), walks horses to the paddock **one at a time, drawn walking along the path**, and feeds hungry
+  horses from storage. Keep Sam's work visible and limited by the player's money and inventory.
+- **Paddock time is relaxed:** a horse just needs *some* time outside during the day (`outToday`). There is
+  no morning deadline and no sadness while inside; only at 21:00 do horses that never got out lose a little
+  happiness. Don't add strict deadlines back.
+- **E on things opens their card or menu first** (stall, paddock horse, Heart Barn pen); actions like Lead are
+  buttons on that card.
 - Mobile matters: check changes at iPhone size (375×812) — big thumb controls, no layout jumps,
   no text selection on long press.
 

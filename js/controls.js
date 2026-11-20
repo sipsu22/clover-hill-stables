@@ -1,7 +1,8 @@
 // Day banner, the animation loop and keyboard/touch controls.
-import { $, clamp, fmt } from './util.js';
-import { CROPS, DAY_MS, MORNING_END, NIGHT, RUG_KINDS, WEATHER, clock, clockText, outCount, rugOK } from './data.js';
+import { $, clamp } from './util.js';
+import { CROPS, NIGHT, RUG_KINDS, WEATHER, clock, clockText, rugOK } from './data.js';
 import { state } from './state.js';
+import { FARMHAND_NAME } from './farmhand.js';
 import { isNarrow, render, sceneBuf } from './views.js';
 import { COLS, ROWS, TILE, clickScene, curMap, held, hintText, interact, pl, updatePlayer } from './world.js';
 import { updateCeremony } from './breeding.js';
@@ -16,22 +17,17 @@ export function dayBanner(){
   return isNarrow() && b.short ? {...b, text: b.short} : b;
 }
 export function dayBannerFull(){
-  const c = clock(), total = state.horses.length, out = outCount(), inside = total - out;
-  const left = (MORNING_END - c.hour) / 18 * DAY_MS / 1000;
+  const c = clock(), total = state.horses.length;
   if (c.hour >= NIGHT) return {kind:'night', text:`🌙 Night time — your horses are asleep in the barn. A new day starts at 6:00.`, short:`🌙 Night: horses are asleep. New day at 6:00.`};
-  if (!total) return {kind:'', text:`${clockText(c.hour)} · Buy a horse at the 🏷️ Market!`};
-  const W0 = WEATHER[state.weather || 'sunny'], bad0 = state.horses.filter(h => h.out && !rugOK(h)).length;
-  if (c.hour < MORNING_END){
-    if (!inside && bad0) return {kind:'sad', text:`${W0.icon} It's ${W0.name.toLowerCase()}! ${bad0} horse${bad0>1?'s':''} in the paddock need${bad0>1?'':'s'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}. Put one on from the horse cards below.`, short:`${W0.icon} ${bad0} horse${bad0>1?'s need':' needs'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}!`};
-    if (!inside) return {kind:'good', text:`🌅 Good morning! All ${total} horses are out in the paddock. 🌳`, short:`🌅 All ${total} horses are out in the paddock! 🌳`};
-    const W = WEATHER[state.weather || 'sunny'];
-    return {kind:'morning', text:`🌅 Morning! ${W.icon} ${W.name} today, so use ${RUG_KINDS[W.needs].name.toLowerCase()}s. Take your horses to the paddock before ${clockText(MORNING_END)} (${fmt(left)} left): ${out} of ${total} out. Lead them past the fields to the right →`,
-      short:`🌅 ${W.icon} Paddock before ${clockText(MORNING_END)} · ${fmt(left)} left · ${out}/${total} out · use ${RUG_KINDS[W.needs].name.toLowerCase()}s`};
-  }
-  if (inside) return {kind:'sad', text:`😢 ${inside} horse${inside>1?'s are':' is'} stuck inside and getting sad. Take ${inside>1?'them':'it'} to the paddock!`, short:`😢 ${inside} horse${inside>1?'s':''} stuck inside, getting sad!`};
-  const W = WEATHER[state.weather || 'sunny'], bad = state.horses.filter(h => h.out && !rugOK(h)).length;
-  if (bad) return {kind:'sad', text:`${W.icon} It's ${W.name.toLowerCase()}! ${bad} horse${bad>1?'s':''} in the paddock need${bad>1?'':'s'} a ${RUG_KINDS[W.needs].name.toLowerCase()}. Put one on from the horse cards below.`, short:`${W.icon} ${bad} horse${bad>1?'s need':' needs'} a ${RUG_KINDS[W.needs].name.toLowerCase()}!`};
-  return {kind:'good', text:`☀️ ${clockText(c.hour)} · All your horses are happily grazing in the paddock. 🌳`, short:`☀️ All horses are grazing happily. 🌳`};
+  if (!total) return {kind:'', text:`${clockText(c.hour)} · Buy a horse at the 🏷️ Market in the village!`};
+  const W = WEATHER[state.weather || 'sunny'], need = RUG_KINDS[W.needs].name.toLowerCase();
+  const been = state.horses.filter(h => h.outToday || h.out).length;
+  const bad = state.horses.filter(h => h.out && !rugOK(h)).length;
+  const helper = state.farmhand && state.farmhand.hired ? ` · 🧑‍🌾 ${FARMHAND_NAME} is helping` : '';
+  if (bad) return {kind:'sad', text:`${W.icon} It's ${W.name.toLowerCase()}! ${bad} horse${bad>1?'s':''} in the paddock need${bad>1?'':'s'} a ${need}. Open a horse's card to put one on.`, short:`${W.icon} ${bad} horse${bad>1?'s need':' needs'} a ${need}!`};
+  if (been === total) return {kind:'good', text:`🌳 Every horse has had paddock time today!${helper}`, short:`🌳 Everyone has been out today!${helper ? ' 🧑‍🌾' : ''}`};
+  return {kind:'morning', text:`🌳 ${been} of ${total} horses have been outside today. Give the rest some paddock time before night (21:00). ${W.icon} ${W.name}: use ${need}s.${helper}`,
+    short:`🌳 ${been}/${total} out today · ${W.icon} use ${need}s${helper ? ' · 🧑‍🌾' : ''}`};
 }
 export function frame(time){
   const dt = Math.min(.1, (time - lastFrame) / 1000); lastFrame = time;

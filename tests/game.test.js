@@ -7,20 +7,29 @@ import { freshGame, setHour, genes } from './helpers.js';
 let st, daisy, sunny;
 beforeEach(() => { st = freshGame(); daisy = S.byId(1); sunny = S.byId(2); });
 
-describe('mornings and the paddock deadline', () => {
-  it('horses still inside at 12:00 lose 20 happiness, horses outside do not', () => {
-    daisy.out = true; daisy.happy = 60; sunny.happy = 60;
+describe('paddock time: some time outside, any time of the day', () => {
+  it('there is no morning deadline: nothing happens at 12:00', () => {
+    daisy.happy = 60; sunny.happy = 60;
     setHour(11.9); dayRules(Date.now(), 0);
     setHour(12.1); dayRules(Date.now(), 0);
-    expect(sunny.happy).toBe(40);
     expect(daisy.happy).toBe(60);
+    expect(sunny.happy).toBe(60);
   });
 
-  it('the horse you are leading at 12:00 does not count as forgotten', () => {
-    st.player.leading = sunny.id; sunny.happy = 60;
-    setHour(11.9); dayRules(Date.now(), 0);
-    setHour(12.1); dayRules(Date.now(), 0);
-    expect(sunny.happy).toBe(60);
+  it('at 21:00 only horses that never got outside today are a bit sad', () => {
+    daisy.happy = 60; sunny.happy = 60;
+    setHour(17); daisy.out = true; dayRules(Date.now(), 0);      // Daisy went out in the afternoon
+    daisy.out = false;                                           // …and came back in early
+    setHour(20.9); dayRules(Date.now(), 0);
+    setHour(21.1); dayRules(Date.now(), 0);
+    expect(daisy.happy).toBe(60);
+    expect(sunny.happy).toBe(45);
+  });
+
+  it('a new day starts fresh: nobody has been out yet', () => {
+    daisy.outToday = true;
+    setHour(6.2, 1); dayRules(Date.now(), 0);
+    expect(daisy.outToday).toBe(false);
   });
 
   it('a new day starts with every horse in its stall: nobody is turned out automatically', () => {
@@ -67,12 +76,11 @@ describe('grazing and rugs while you play', () => {
     expect(daisy.happy).toBeCloseTo(50 - .08 * 4);
   });
 
-  it('a horse stuck inside after 12:00 slowly gets sad; before 12:00 it is fine', () => {
+  it('a horse inside is not punished during the day (only the 21:00 check counts)', () => {
     sunny.happy = 50;
     setHour(9);  dayRules(Date.now(), 0); dayRules(Date.now(), 4);
+    setHour(15); dayRules(Date.now(), 0); dayRules(Date.now(), 4);
     expect(sunny.happy).toBe(50);
-    setHour(14); dayRules(Date.now(), 0); dayRules(Date.now(), 4);
-    expect(sunny.happy).toBeLessThan(50);
   });
 });
 

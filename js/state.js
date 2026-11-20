@@ -1,7 +1,7 @@
 // The saved game state and rules about horses (value, mood, readiness, hunger...).
 import { clamp, fmt, now, pick, randi, round5 } from './util.js';
 import { phen, randomGenes } from './genetics.js';
-import { COLOR_VALUE, MORNING_END, NAMES, NIGHT, RUG_KINDS, WEATHER, clock, rugOK, rugOf } from './data.js';
+import { COLOR_VALUE, NAMES, NIGHT, RUG_KINDS, WEATHER, clock, rugOK, rugOf } from './data.js';
 import { toast } from './ui.js';
 
 /* ---------- state ---------- */
@@ -75,7 +75,8 @@ export function status(h){
   if (h.out && !rugOK(h)){ const W = WEATHER[state.weather || 'sunny']; return `${W.badIcon} ${W.why}! I need a ${RUG_KINDS[W.needs].name.toLowerCase()}.`; }
   if (h.out) return '🌳 Out in the paddock';
   if (h.restUntil > t) return `💤 Resting ${fmt((h.restUntil-t)/1000)}`;
-  if (clock().hour >= MORNING_END && clock().hour < NIGHT) return '😢 Stuck inside — take me to the paddock!';
+  if (h.withHand) return '🧑‍🌾 Going to the paddock with the farmhand';
+  if (!h.outToday && clock().hour < NIGHT) return "🌳 Hasn't been outside yet today";
   if (h.hunger < 25) return '😟 Very hungry!';
   return '';
 }

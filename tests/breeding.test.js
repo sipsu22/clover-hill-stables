@@ -31,13 +31,16 @@ describe('the pens', () => {
     expect(B.penAt(3, 5)).toBeNull();      // the floor
   });
 
-  it('a horse you lead in waits there; E again leads it back out', () => {
+  it('a horse you lead in waits there; E again shows its card, and Lead takes it out', () => {
     st.player.leading = 1;
     stand('heart', 3, 4, 'up');
     W.interact();
     expect(daisy.pen).toBe('A');
     expect(st.player.leading).toBeNull();
     W.interact();
+    expect(daisy.pen).toBe('A');                                  // just the card, not leading yet
+    expect(document.querySelector('#modal.on .hname').textContent).toMatch(/Daisy/);
+    ACT.lead(1);
     expect(daisy.pen).toBeUndefined();
     expect(st.player.leading).toBe(1);
   });

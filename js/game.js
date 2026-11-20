@@ -1,10 +1,11 @@
 // Game clock: tick, day/night rules, saving and loading.
 import { clamp, esc, now } from './util.js';
 import { fullName, phen } from './genetics.js';
-import { CROPS, MORNING_END, NIGHT, RUG_KINDS, SAVE_KEY, T, WEATHER, clock, clockText, outCount, rollWeather, rugOK } from './data.js';
+import { CROPS, NIGHT, RUG_KINDS, SAVE_KEY, T, WEATHER, clock, outCount, rollWeather, rugOK } from './data.js';
 import { decay, discover, makeHorse, refreshMarket, state } from './state.js';
 import { updateBonds } from './affinity.js';
 import { nameModal, toast } from './ui.js';
+import { FARMHAND_NAME, farmhandNewDay, farmhandTick } from './farmhand.js';
 import { render, updateLive } from './views.js';
 
 /* ---------- game loop ---------- */
@@ -14,6 +15,7 @@ export function tick(){
   let changed = false;
   for (const h of state.horses) decay(h, sec);
   changed = dayRules(t, sec) || changed;
+  if (farmhandTick(Math.min(sec, 60))) changed = true;   // Sam walks horses out and feeds them
   for (const h of [...state.horses]){
     if (h.adultAt && t >= h.adultAt){ h.adultAt = 0; toast(`🎉 ${h.name} is all grown up!`, 'good'); changed = true; }
     if (h.preg && t >= h.preg.due){
@@ -46,33 +48,36 @@ export function dayRules(t, sec){
     state.day = c.idx;
     state.weather = rollWeather();
     refreshMarket();                       // new horses at the dealer every morning
-    for (const h of state.horses){ h.out = false; delete h.pen; }
+    for (const h of state.horses){ h.out = false; h.outToday = false; delete h.pen; delete h.withHand; }
     P.leading = null; changed = true;
-    if (c.hour < MORNING_END){
+    const working = farmhandNewDay();      // the farmhand gets paid, dresses the horses and plans the day
+    if (c.hour < NIGHT){
       const W = WEATHER[state.weather], need = RUG_KINDS[W.needs].name.toLowerCase();
-      toast(`${W.icon} Good morning! Day ${c.day}. It's ${W.name.toLowerCase()} today, so put a ${need} on each horse and take them to the paddock before ${clockText(MORNING_END)}!`, 'gold');
+      toast(working ? `${W.icon} Good morning! Day ${c.day}, ${W.name.toLowerCase()} today. ${FARMHAND_NAME} is putting ${need}s on and taking the horses out.`
+                    : `${W.icon} Good morning! Day ${c.day}. It's ${W.name.toLowerCase()} today: give every horse some paddock time (with a ${need})!`, 'gold');
     }
   }
-  // 12:00 — anyone still inside gets sad
-  if (lastHour !== null && lastHour < MORNING_END && c.hour >= MORNING_END){
-    const sad = state.horses.filter(h => !h.out && P.leading !== h.id);
-    for (const h of sad) h.happy = clamp(h.happy - 20, 0, 100);
-    if (sad.length) toast(`😢 ${sad.map(h => h.name).join(', ')} didn't get to go out this morning and ${sad.length > 1 ? 'are' : 'is'} sad.`);
-    else if (state.horses.length) toast('🌳 Great job! Every horse made it to the paddock this morning!', 'good');
+  // horses only need SOME time outside during the day (not by a deadline)
+  for (const h of state.horses) if (h.out) h.outToday = true;
+  // 21:00 — horses that never got outside today are a little sad
+  if (lastHour !== null && lastHour < NIGHT && c.hour >= NIGHT && state.horses.length){
+    const missed = state.horses.filter(h => !h.outToday);
+    for (const h of missed) h.happy = clamp(h.happy - 15, 0, 100);
+    if (missed.length) toast(`😢 ${missed.map(h => h.name).join(', ')} didn't get outside today and ${missed.length > 1 ? 'are' : 'is'} a bit sad.`);
+    else toast('🌳 Lovely! Every horse had paddock time today.', 'good');
     changed = true;
   }
   // 21:00 — night falls, everyone comes back in
   if (c.hour >= NIGHT && (outCount() || P.leading || state.horses.some(h => h.pen))){
-    for (const h of state.horses){ h.out = false; delete h.pen; }
+    for (const h of state.horses){ h.out = false; delete h.pen; delete h.withHand; }
     P.leading = null; changed = true;
     toast('🌙 Night falls. Your horses walked back into their stalls to sleep.');
   }
-  // while playing: grazing makes horses happy, being stuck inside makes them sad
+  // while playing: grazing makes horses happy (if they wear the right rug for the weather)
   if (sec < 5){
     for (const h of state.horses){
       if (h.out && rugOK(h)){ h.happy = clamp(h.happy + .09*sec, 0, 100); h.hunger = clamp(h.hunger + .04*sec, 0, 100); }
       else if (h.out){ h.happy = clamp(h.happy - .08*sec, 0, 100); h.hunger = clamp(h.hunger + .04*sec, 0, 100); }
-      else if (c.hour >= MORNING_END && c.hour < NIGHT && P.leading !== h.id) h.happy = clamp(h.happy - .06*sec, 0, 100);
     }
   }
   lastHour = c.hour;
@@ -98,6 +103,7 @@ export function load(){
       // the tab bar is gone: breeding uses love potions now, so give older farms one to try
       if (s.inv && s.inv.potion === undefined) s.inv.potion = 1;
       s.bonds = s.bonds || {};
+      s.farmhand = s.farmhand || {hired: false};
       s.tab = 'stable'; delete s.sel;
       // the Horse Book stand stands at (15,7) in the barn: move any decoration that was there
       for (const d of s.decor || []) if (d.x === 15 && d.y === 7){

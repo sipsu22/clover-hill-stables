@@ -4,6 +4,7 @@ import { clamp, mulberry, now } from './util.js';
 import { horseCanvas, itemCanvas, mapCanvas, saddleCanvas } from './sprites.js';
 import { CROPS, NIGHT, clock, rugOK } from './data.js';
 import { byId, isFoal, look, state } from './state.js';
+import { isHired, tripProgress } from './farmhand.js';
 import { AISLE_BOT, AISLE_TOP, BARN_DOOR_ROWS, BOOK_TILE, COLS, FENCE, HOOKS, PADDOCK, PADDOCK_TREES, PATH, PLACES, POND, ROWS, SCARECROW, TILE, TREES, TROUGH, WINDOWS, barnWalk, curMap, decorAt, facing, horseNear, isBookTile, isFarmDoor, isFence, isPaddockFence, lead, pdk, pl, placeInPaddock, plotAt, plotPos, stallAt } from './world.js';
 import { frame } from './controls.js';
 
@@ -130,6 +131,45 @@ export function drawHorseAt(g, h, x, y, flip, moving, time, label){
     g.fillStyle = '#fff'; g.fillText(h.name, Math.round(x*TILE + 8), dy - 1);
   }
 }
+// Sam the farmhand: green shirt, brown cap
+export const farmhandCanvas = (dir, frame) => mapCanvas(`farmhand:${dir}:${frame}`, KID[dir][frame],
+  {...KID_COLORS, r: '#5f9a3e', R: '#3d6a25', y: '#a0703f', Y: '#5e3a1a', h: '#2b1d15'});
+// where Sam walks on each map during one trip (trip progress 0..1 is split between the maps)
+export const FARMHAND_ROUTE = {
+  barn:    {from: 0,   to: .15, path: [[4, 5], [0, 5]]},
+  farm:    {from: .15, to: .85, path: [[2, 5], [2, 7], [15, 7]]},
+  paddock: {from: .85, to: 1,   path: [[0, 7], [4, 7]]},
+};
+function along(path, d){
+  for (let i = 1; i < path.length; i++){
+    const [ax, ay] = path[i-1], [bx, by] = path[i], len = Math.abs(bx - ax) + Math.abs(by - ay);
+    if (d <= len || i === path.length - 1){
+      const k = len ? Math.max(0, Math.min(1, d / len)) : 0;
+      return {x: ax + (bx - ax) * k, y: ay + (by - ay) * k, dx: Math.sign(bx - ax), dy: Math.sign(by - ay)};
+    }
+    d -= len;
+  }
+}
+const pathLength = path => path.slice(1).reduce((s, [bx, by], i) => s + Math.abs(bx - path[i][0]) + Math.abs(by - path[i][1]), 0);
+/** Sam (and the horse Sam is walking) as things to draw on the current map. */
+export function farmhandThings(g, time){
+  if (!isHired()) return [];
+  const map = curMap(), trip = tripProgress();
+  if (!trip){
+    if (map !== 'farm') return [];
+    return [{y: 6, draw: () => g.drawImage(farmhandCanvas('down', 0), 4 * TILE + 1, 6 * TILE - 3)}];   // waiting by the barn
+  }
+  const R = FARMHAND_ROUTE[map];
+  if (!R || trip.p < R.from || trip.p > R.to) return [];
+  const L = pathLength(R.path), d = (trip.p - R.from) / (R.to - R.from) * L;
+  const me = along(R.path, d), horse = along(R.path, Math.max(0, d - 1));
+  const dir = me.dx > 0 ? 'right' : me.dx < 0 ? 'left' : me.dy > 0 ? 'down' : 'up';
+  const frame = Math.floor(time / 130) % 2;
+  return [
+    {y: me.y + .01, draw: () => g.drawImage(farmhandCanvas(dir, frame), Math.round(me.x * TILE + 1), Math.round(me.y * TILE - 3))},
+    {y: horse.y, draw: () => drawHorseAt(g, trip.h, horse.x, horse.y, horse.dx < 0, true, time, false)},
+  ];
+}
 export function ledThing(g, time){
   const h = state.player.leading ? byId(state.player.leading) : null;
   if (!h) return null;
@@ -200,7 +240,7 @@ export function drawScene(cv, time){
   // horses in their stalls
   state.horses.slice(0, state.cap).forEach((h, i) => {
     const sx = (i % 8) * 32, sy = i < 8 ? 32 : 128;
-    if (h.out || h.pen || state.player.leading === h.id){
+    if (h.out || h.pen || h.withHand || state.player.leading === h.id){
       // an empty stall with a little sun sign: "out in the paddock"
       if (h.out){ px(g, '#f5d76e', sx + 13, sy + 10, 6, 6); px(g, '#f5d76e', sx + 15, sy + 7, 2, 12); px(g, '#f5d76e', sx + 10, sy + 12, 12, 2); }
       return;
@@ -227,6 +267,7 @@ export function drawScene(cv, time){
   things.push({y: BOOK_TILE[1], draw: () => g.drawImage(mapCanvas('bookstand', BOOKSTAND, BOOK_COLORS), BOOK_TILE[0]*TILE, BOOK_TILE[1]*TILE - 4)});
   things.push(farmerThing(g));
   const lt = ledThing(g, time); if (lt) things.push(lt);
+  things.push(...farmhandThings(g, time));
   things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
   drawOverlays(g);
 }
@@ -394,6 +435,7 @@ export function drawPaddock(g, time){
   }
   things.push(farmerThing(g));
   const lt = ledThing(g, time); if (lt) things.push(lt);
+  things.push(...farmhandThings(g, time));
   // highlight a horse you can lead
   if (!P.leading && !pl.moving){
     const [fx, fy] = facing(), h = horseNear(fx, fy) || horseNear(P.x, P.y);
@@ -434,6 +476,7 @@ export function drawFarm(g, time){
   things.push({y: SCARECROW[1], draw: () => g.drawImage(mapCanvas('scarecrow', SCARECROW_SPR, NATURE_COLORS), SCARECROW[0]*TILE + 1, SCARECROW[1]*TILE - 1)});
   things.push(farmerThing(g));
   const lt = ledThing(g, time); if (lt) things.push(lt);
+  things.push(...farmhandThings(g, time));
   things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
   drawOverlays(g);
 }

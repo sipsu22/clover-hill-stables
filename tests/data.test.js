@@ -57,11 +57,6 @@ describe('the game clock', () => {
     expect(D.clock()).toMatchObject({idx: 1, day: 2});
   });
 
-  it('mornings give about 4 real minutes before the 12:00 deadline', () => {
-    expect(D.MORNING_END).toBe(12);
-    expect((D.MORNING_END - 6) / 18 * D.DAY_MS).toBe(4 * 60 * 1000);
-  });
-
   it('clockText shows quarter hours', () => {
     expect(D.clockText(12.5)).toBe('12:30');
     expect(D.clockText(6.9)).toBe('06:45');

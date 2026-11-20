@@ -300,7 +300,7 @@ export function interact(){
     if (st >= state.cap) return openBuild();
     const h = state.horses[st];
     if (!h) return toast('This stall is empty. Buy a horse at the market in the village!');
-    if (h.out || h.pen) return toast(`${h.name} is not here right now (${h.out ? 'in the paddock' : 'in the Heart Barn'}).`);
+    if (h.out || h.pen || h.withHand) return toast(`${h.name} is not here right now (${h.withHand ? 'walking to the paddock with the farmhand' : h.out ? 'in the paddock' : 'in the Heart Barn'}).`);
     return horseModal(h.id, 'stall');
   }
   if (P.carry){
@@ -352,7 +352,7 @@ export function hintText(){
   if (st >= 0){
     if (st >= state.cap) return '🔨 Press E to build more stalls';
     const h = state.horses[st];
-    return h ? (h.out || h.pen ? `${h.name}'s stall (${h.out ? 'in the paddock' : 'in the Heart Barn'})` : `Press E to visit ${h.name}`) : 'An empty stall';
+    return h ? (h.out || h.pen || h.withHand ? `${h.name}'s stall (${h.withHand ? 'off to the paddock' : h.out ? 'in the paddock' : 'in the Heart Barn'})` : `Press E to visit ${h.name}`) : 'An empty stall';
   }
   if (P.carry) return barnWalk(fx, fy) ? `Press E to put down the ${SHOP[P.carry.type].name.toLowerCase()}` : `Carrying: ${SHOP[P.carry.type].name}`;
   const d = decorAt(fx, fy);

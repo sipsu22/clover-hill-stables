@@ -12,8 +12,8 @@ import { DNA_COST, T } from './data.js';
 import { byId, isFoal, look, readiness, state } from './state.js';
 import { addBond, breedChance, getBond, heartsFor, natureMatch } from './affinity.js';
 import { closeModal, showModal, toast } from './ui.js';
-import { render } from './views.js';
-import { COLS, ROWS, TILE, bfs, facing, goTo, pl, resetLeadPos, walkAndUse } from './world.js';
+import { horseModal, render } from './views.js';
+import { COLS, ROWS, TILE, bfs, facing, goTo, pl, walkAndUse } from './world.js';
 import { drawHighlight, drawOverlays, farmerThing, ledThing, px } from './world-draw.js';
 import { save } from './game.js';
 
@@ -144,11 +144,7 @@ export function interact(fx, fy, led){
     toast(`💕 ${led.name} is waiting in the pen.`, 'good');
     save(); render(); return;
   }
-  if (inPen){
-    delete inPen.pen; P.leading = inPen.id; resetLeadPos();
-    toast(`🐴 ${inPen.name} is following you again.`);
-    save(); render(); return;
-  }
+  if (inPen) return horseModal(inPen.id, 'pen');      // the horse card, with a Lead button
   toast('This pen is empty. Lead a horse here and press E.');
 }
 export function hint(fx, fy, led){
@@ -158,7 +154,7 @@ export function hint(fx, fy, led){
   const p = penAt(fx, fy);
   if (p){
     const h = penHorse(p);
-    if (h) return led ? `${h.name} is in this pen` : `Press E to lead ${h.name} out`;
+    if (h) return led ? `${h.name} is in this pen` : `Press E to see ${h.name}`;
     return led ? `Press E to put ${led.name} in this pen 💕` : 'An empty pen';
   }
   const {a, b} = pair();
