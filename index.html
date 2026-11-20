@@ -1,0 +1,2942 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clover Hill Stables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9f0d8; --card:#fffdf4; --ink:#3b3226; --muted:#867a66; --line:#e2d9c3;
+  --green:#5f8f3e; --green-d:#4a7330; --gold:#d9a52b; --red:#c8553d; --blue:#4f86b8; --pink:#d9748c;
+  --soil:#8b6644; --soil-d:#73533a; --grass:#9cc56a; --grass-d:#7fae4f;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Nunito",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+h1,h2,h3,.pix{font-family:"Pixelify Sans","Nunito",monospace;font-weight:600;letter-spacing:.3px}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:6px 10px;background:#efe7d3;color:var(--ink);font-weight:700;box-shadow:0 2px 0 #d3c7aa;transition:transform .05s}
+button:hover{filter:brightness(1.04)}
+button:active{transform:translateY(2px);box-shadow:none}
+button.primary{background:var(--green);color:#fff;box-shadow:0 2px 0 var(--green-d)}
+button.gold{background:var(--gold);color:#fff;box-shadow:0 2px 0 #b5861a}
+button.danger{background:#f3d9d2;color:#9c3a26;box-shadow:0 2px 0 #e2b9ad}
+button:disabled{opacity:.45;cursor:not-allowed}
+img.spr{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+
+header{position:sticky;top:0;z-index:10;background:#6b4a2e;color:#fff6e4;box-shadow:0 3px 0 #4f3520}
+.top{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top h1{margin:0;font-size:22px;flex:1;min-width:200px}
+.hud{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.14);padding:4px 10px;border-radius:20px;font-weight:800;white-space:nowrap}
+nav{max-width:1100px;margin:0 auto;padding:0 16px 10px;display:flex;gap:6px;overflow-x:auto}
+nav button{background:#8a6340;color:#fff6e4;box-shadow:0 2px 0 #4f3520;white-space:nowrap}
+nav button.on{background:#fff6e4;color:#6b4a2e}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.panel h2{margin:0 0 6px;font-size:22px}
+.panel p{margin:4px 0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+
+/* horse card */
+.hcard{background:var(--card);border:2px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.pasture{background:linear-gradient(#cfe7f5 0 62%,var(--grass) 62% 100%);height:150px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;position:relative;image-rendering:pixelated}
+.pasture::after{content:"";position:absolute;left:0;right:0;top:62%;height:4px;background:var(--grass-d)}
+.pasture img{position:relative;z-index:1}
+.badge{position:absolute;top:8px;left:8px;z-index:2;background:#fff;border-radius:12px;padding:2px 8px;font-size:12px;font-weight:800}
+.badge.r{left:auto;right:8px}
+.hbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.hname{font-size:19px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.hname .sex{font-size:15px;padding:0 6px;border-radius:8px;color:#fff}
+.sex.F{background:var(--pink)}.sex.M{background:var(--blue)}
+.hcolor{color:var(--muted);font-weight:700;font-size:14px}
+.row{display:flex;align-items:center;gap:8px;font-size:13px}
+.row .lbl{width:74px;color:var(--muted);font-weight:700}
+.bar{flex:1;height:10px;background:#ece4d0;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .4s}
+.bar i.low{background:var(--red)}
+.bar i.mid{background:var(--gold)}
+.bar.stat i{background:#a57bc7}
+.status{font-size:13px;font-weight:800;color:#8a6340;min-height:18px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:4px}
+.btns button{font-size:13px;padding:5px 8px}
+.genes{display:flex;flex-wrap:wrap;gap:4px}
+.gene{font-size:11px;background:#f1ecdf;border-radius:6px;padding:2px 6px;font-weight:700;color:var(--muted)}
+.gene.on{background:#e3f0d2;color:var(--green-d)}
+
+/* farm */
+.plots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.plot{background:repeating-linear-gradient(0deg,var(--soil) 0 8px,var(--soil-d) 8px 12px);border-radius:12px;height:150px;border:3px solid #5d4330;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;color:#fff;cursor:default}
+.plot.ready{cursor:pointer;box-shadow:0 0 0 3px var(--gold)}
+.plot.ready img{animation:bob .8s steps(2) infinite}
+.plot .seeds{display:flex;flex-direction:column;gap:4px}
+.plot .seeds button{font-size:12px;padding:4px 8px;display:flex;align-items:center;gap:4px}
+.plot .seeds img{width:20px;height:20px}
+.pbar{width:80%;height:8px;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden}
+.pbar i{display:block;height:100%;background:#9fdc6a}
+.ptime{font-size:12px;font-weight:800;text-shadow:0 1px 0 #000}
+.inv{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.invi button{white-space:nowrap}
+.invi{display:flex;align-items:center;gap:10px;background:#f6f0e0;border-radius:10px;padding:8px}
+.invi .n{font-size:20px;font-weight:800;flex:1}
+.ups{display:flex;gap:10px;flex-wrap:wrap}
+
+/* breeding */
+.pair{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:10px 0}
+.slot{width:200px;border:3px dashed var(--line);border-radius:14px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;text-align:center;color:var(--muted);font-weight:700}
+.slot.full{border-style:solid;background:#fbf7ea;color:var(--ink)}
+.heart{font-size:30px}
+.mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.mcard{background:var(--card);border:3px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.mcard.sel{border-color:var(--green);background:#f1f8e6}
+.mcard .nm{font-weight:800}
+.mcard .rd{font-size:12px;font-weight:800;color:var(--red)}
+.mcard .rd.ok{color:var(--green)}
+.odds{display:flex;flex-direction:column;gap:4px;max-width:440px;margin:8px auto}
+.odd{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.odd img{width:40px}
+.odd .p{margin-left:auto;font-variant-numeric:tabular-nums}
+.new{background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:800}
+.center{text-align:center}
+
+/* book */
+.book{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.bent{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.bent.lock{background:#f3efe4}
+.bent .bn{font-weight:800}
+.bent .bh{font-size:12px;color:var(--muted)}
+.prog{height:14px;background:#ece4d0;border-radius:8px;overflow:hidden;margin:8px 0}
+.prog i{display:block;height:100%;background:var(--gold)}
+
+/* modal + toast */
+#modal{position:fixed;inset:0;background:rgba(40,28,18,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#modal.on{display:flex}
+.mbox{position:relative;max-height:calc(100vh - 32px);overflow-y:auto;background:var(--card);border-radius:16px;padding:20px;max-width:420px;width:100%;text-align:center;border:4px solid #6b4a2e}
+.mbox h2{margin:6px 0}
+.mbox input{font:inherit;font-size:18px;padding:8px 10px;border-radius:8px;border:2px solid var(--line);width:100%;margin:10px 0;text-align:center}
+.mbox .mpic{display:flex;justify-content:center;background:linear-gradient(#cfe7f5 0 62%,var(--grass) 62%);border-radius:12px;padding:14px 0 10px}
+#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:60;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:460px}
+.toast{background:#3b3226;color:#fff6e4;padding:10px 14px;border-radius:10px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:tin .25s ease-out;text-align:center}
+.toast.good{background:var(--green-d)}
+.toast.gold{background:#b5861a}
+.pop{position:fixed;pointer-events:none;font-size:22px;z-index:70;animation:pop 1s ease-out forwards}
+@keyframes pop{to{transform:translateY(-50px);opacity:0}}
+@keyframes tin{from{transform:translateY(10px);opacity:0}}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.bob{animation:bob 1.2s steps(2) infinite}
+/* stable scene */
+.scene-wrap{padding:10px}
+#scene{width:100%;max-width:768px;display:block;margin:0 auto;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;border:3px solid #4f3520;background:#4f3520;touch-action:none;cursor:pointer}
+.scene-ui{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:10px;flex-wrap:wrap}
+.hint{flex:1;min-width:220px;max-width:420px;font-weight:700;color:#6b4a2e;text-align:center;min-height:22px}
+.dpad{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(2,36px);gap:4px}
+.dpad button{padding:0;font-size:16px;touch-action:none;user-select:none}
+.dpad .u{grid-column:2;grid-row:1}.dpad .l{grid-column:1;grid-row:2}.dpad .d{grid-column:2;grid-row:2}.dpad .r{grid-column:3;grid-row:2}
+.actbtn{width:64px;height:64px;border-radius:50%;font-size:20px;touch-action:none}
+.keys{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+kbd{background:#efe7d3;border-radius:4px;padding:0 5px;font-family:inherit;font-weight:800;box-shadow:0 1px 0 #d3c7aa}
+#ride{width:100%;max-width:800px;display:block;margin:0 auto;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:8px;border:3px solid #4f3520;touch-action:none;cursor:pointer}
+.ridehud{display:flex;justify-content:center;gap:18px;font-weight:800;font-size:16px;min-height:26px;margin-bottom:6px;flex-wrap:wrap}
+.rugsw{display:inline-block;width:14px;height:12px;border-radius:3px;border:2px solid;vertical-align:middle;margin-left:2px}
+.saddles button.need{outline:2px solid var(--gold)}
+.daybanner{text-align:center;font-weight:800;padding:6px 10px;border-radius:8px;margin:0 auto 8px;max-width:768px;background:#f1ecdf;color:#6b4a2e}
+.daybanner.morning{background:#fff1c9;color:#8a5a00}
+.daybanner.sad{background:#f7dcd5;color:#9c3a26}
+.daybanner.good{background:#e3f0d2;color:var(--green-d)}
+.daybanner.night{background:#2f3157;color:#e8e6ff}
+.seedbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin-top:10px}
+.seedbar button{display:flex;align-items:center;gap:5px;font-size:13px}
+.seedbar button.on{background:#e3f0d2;box-shadow:0 2px 0 var(--green);outline:2px solid var(--green)}
+.seedbar small{color:var(--muted);font-weight:700}
+.sbinv{font-size:13px;font-weight:800;color:#6b4a2e}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.sitem{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.sitem .sn{font-weight:800}
+.bundle{position:relative;border-color:#e6c46a;background:linear-gradient(#fff8e2,var(--card) 60%)}
+.bundle .save{position:absolute;top:-10px;right:-6px;background:var(--red);color:#fff;font-weight:800;font-size:12px;padding:2px 8px;border-radius:10px;transform:rotate(4deg)}
+.bparts{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;margin:4px 0}
+.bpart{display:flex;align-items:center;gap:2px;background:#b08d63;color:#fff;font-weight:800;font-size:13px;border-radius:6px;padding:3px 5px}
+.was{font-size:12px;color:var(--muted);text-decoration:line-through}
+.roompanel{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.roompanel>div{flex:1;min-width:240px}
+.roompanel.full{border-color:var(--gold);background:#fff6dc}
+.sitem .sd{font-size:12px;color:var(--muted);flex:1}
+.sitem .own{font-size:12px;font-weight:800;color:var(--green-d)}
+.sicon{background:#b08d63;border-radius:8px;padding:6px 10px}
+.saddles{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.saddles button{padding:3px 6px;font-size:12px;display:flex;align-items:center;gap:4px}
+.saddles button.on{background:#e3f0d2;box-shadow:0 2px 0 var(--green)}
+.mbox.wide{max-width:360px;text-align:left;padding:0;overflow:hidden}
+.mbox.wide .hcard{border:0;border-radius:0}
+.mbox.wide .closex{position:absolute;right:8px;top:8px;z-index:3}
+footer{max-width:1100px;margin:0 auto;padding:10px 16px 40px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.empty{padding:30px;text-align:center;color:var(--muted);font-weight:700}
+@media (max-width:520px){.top h1{font-size:18px}.slot{width:150px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>🍀 Clover Hill Stables</h1><div class="hud" id="hud"></div></div>
+  <nav id="tabs"></nav>
+</header>
+<main id="view"></main>
+<footer><span>Your progress saves automatically in this browser.</span><button class="danger" data-act="reset">Start over</button></footer>
+<div id="modal"><div class="mbox" id="mbox"></div></div>
+<div id="toasts"></div>
+
+<script>
+/* =========================================================
+   PIXEL SPRITES — each string is one row of pixels.
+   '.' = empty. Outlines are added automatically around shapes.
+   Horse letters:
+     B body   L body highlight   b belly shade   S far-side legs
+     M mane/tail   I inner ear   E eye   N nostril   H hoof
+     F face (white if blaze/star)   D back stripe (dun horses)
+     1 2 far lower legs   3 4 near lower legs (can be white socks)
+   ========================================================= */
+const SPR = {
+  horse: [
+    "................................",
+    "......................B.B.......",
+    ".....................MBBIB......",
+    "....................MMBBEBB.....",
+    "...................MMBBBBFBB....",
+    "..................MMBBBBBBFBB...",
+    ".................MMBBBB.BBBFBB..",
+    "................MMBBBBB..BBBFBB.",
+    "...............MMBBBBBBB..BBBNB.",
+    ".......BDDDDDDMMBBBBBBBB...BBB..",
+    "...MMBBBLLLLLLLBBBBBBBBBB.......",
+    "..MMBBBBBBBBBBBBBBBBBBBBB.......",
+    "..MMBBBBBBBBBBBBBBBBBBBBB.......",
+    "..MMBBBBBBBBBBBBBBBBBBBB........",
+    "..MM.bbbbbbbbbbbbbbbbbbb........",
+    "..MM..bbbbbbbbbbbbbbbbb.........",
+    "..MM.BBBSS........SSBBB.........",
+    "..MM.BB.SS........SS.BB.........",
+    "..M..BB.SS........SS.BB.........",
+    "..M..33.11........22.44.........",
+    ".....33.11........22.44.........",
+    ".....33.11........22.44.........",
+    ".....HH.HH........HH.HH.........",
+    "................................",
+  ],
+  foal: [
+    "..........................",
+    "..........................",
+    ".................B.B......",
+    "................MBBIB.....",
+    "...............MMBBEBB....",
+    "..............MMBBBBFBB...",
+    ".............MMBBB.BBFBB..",
+    "............MMBBBB..BBNB..",
+    "...........MMBBBBBB..BB...",
+    "...MM.BDDDDBBBBBBBB.......",
+    "...MMBBLLLLLBBBBBBBB......",
+    "...M.BBBBBBBBBBBBBBB......",
+    "...M.bbbbbbbbbbbbbb.......",
+    "...M..bbbbbbbbbbbb........",
+    "......BB.S.....S.BB.......",
+    "......B..S.....S.B........",
+    "......B..S.....S.B........",
+    "......B..S.....S.B........",
+    "......3..1.....2.4........",
+    "......3..1.....2.4........",
+    "......3..1.....2.4........",
+    "......3..1.....2.4........",
+    "......H..H.....H.H........",
+    "..........................",
+  ],
+  sprout: [
+    "............",
+    "............",
+    "............",
+    "............",
+    "...g....g...",
+    "...gg..gg...",
+    "....gGGg....",
+    ".....GG.....",
+    ".....G......",
+    ".....G......",
+    "............",
+    "............",
+  ],
+  hay: [
+    "............",
+    "..h.....h...",
+    "..h..h..h...",
+    "...h.h.h..h.",
+    ".h.h.hh.h.h.",
+    ".h.hhhh.hh..",
+    "..hHhHhhHh..",
+    "..HhHHhHhH..",
+    "...HHHHHH...",
+    "....YYYY....",
+    "...YyyyyY...",
+    "............",
+  ],
+  carrot: [
+    "............",
+    ".......g.g..",
+    ".......gGg..",
+    "......gGGg..",
+    ".....ooG....",
+    "....oOoo....",
+    "...oooo.....",
+    "...ooOo.....",
+    "..oooo......",
+    "..oOo.......",
+    "..oo........",
+    ".o..........",
+  ],
+  oats: [
+    ".....y......",
+    "....yYy..y..",
+    ".....y..yYy.",
+    "....yYy..y..",
+    ".....y..yYy.",
+    "....yYy..y..",
+    ".....g...g..",
+    ".....g..g...",
+    "......gg....",
+    "......g.....",
+    "......g.....",
+    "............",
+  ],
+};
+const CROP_COLORS = {g:'#7bbf4a',G:'#4f8a2b',h:'#b5cf5c',H:'#86a33c',y:'#ecc75e',Y:'#b98d2c',o:'#f08a2a',O:'#c4621a'};
+
+/* ---------- the farmer (you!) ----------
+   Y/y straw hat  h hair  s skin  e eyes  r/R shirt  b pants  k boots */
+const KID = {
+  down: [[
+    "....YYYY....",
+    "...YyyyyY...",
+    ".YYYYYYYYYY.",
+    "..hssssssh..",
+    "..hsessesh..",
+    "..hssssssh..",
+    "...ssssss...",
+    "..rrRrrRrr..",
+    ".srrRrrRrrs.",
+    ".srrRrrRrrs.",
+    "..rrRrrRrr..",
+    "...bbbbbb...",
+    "...bbbbbb...",
+    "...bb..bb...",
+    "...kk..kk...",
+  ],[
+    "....YYYY....",
+    "...YyyyyY...",
+    ".YYYYYYYYYY.",
+    "..hssssssh..",
+    "..hsessesh..",
+    "..hssssssh..",
+    "...ssssss...",
+    "..rrRrrRrr..",
+    ".srrRrrRrrs.",
+    ".srrRrrRrrs.",
+    "..rrRrrRrr..",
+    "...bbbbbb...",
+    "...bbbbbb...",
+    "...bb..kk...",
+    "...kk.......",
+  ]],
+  up: [[
+    "....YYYY....",
+    "...YyyyyY...",
+    ".YYYYYYYYYY.",
+    "..hhhhhhhh..",
+    "..hhhhhhhh..",
+    "..hhhhhhhh..",
+    "...hhhhhh...",
+    "..rrRrrRrr..",
+    ".srrRrrRrrs.",
+    ".srrRrrRrrs.",
+    "..rrRrrRrr..",
+    "...bbbbbb...",
+    "...bbbbbb...",
+    "...bb..bb...",
+    "...kk..kk...",
+  ],[
+    "....YYYY....",
+    "...YyyyyY...",
+    ".YYYYYYYYYY.",
+    "..hhhhhhhh..",
+    "..hhhhhhhh..",
+    "..hhhhhhhh..",
+    "...hhhhhh...",
+    "..rrRrrRrr..",
+    ".srrRrrRrrs.",
+    ".srrRrrRrrs.",
+    "..rrRrrRrr..",
+    "...bbbbbb...",
+    "...bbbbbb...",
+    "...kk..bb...",
+    ".......kk...",
+  ]],
+  right: [[
+    "....YYYY....",
+    "...YyyyyY...",
+    "..YYYYYYYYYY",
+    "...hhsssss..",
+    "...hhsssess.",
+    "...hhsssssss",
+    "....hssss...",
+    "....rrRrr...",
+    "...rrRrrr...",
+    "...rrsRrr...",
+    "....rRrr....",
+    "....bbbb....",
+    "....bbbb....",
+    "...bb..bb...",
+    "...kk..kkk..",
+  ],[
+    "....YYYY....",
+    "...YyyyyY...",
+    "..YYYYYYYYYY",
+    "...hhsssss..",
+    "...hhsssess.",
+    "...hhsssssss",
+    "....hssss...",
+    "....rrRrr...",
+    "...rrRrrr...",
+    "...rrsRrr...",
+    "....rRrr....",
+    "....bbbb....",
+    "....bbbb....",
+    "....bbb.....",
+    "....kkkk....",
+  ]],
+};
+KID.left = KID.right.map(f => f.map(r => [...r].reverse().join('')));
+const KID_COLORS = {Y:'#b98d2c',y:'#ecc75e',h:'#6b3e1f',s:'#f2c39b',e:'#2b1d15',r:'#d0533f',R:'#a33a2a',b:'#4f6fa8',k:'#5a3a22'};
+
+/* ---------- stable decorations (14x14) ---------- */
+const ITEM_SPR = {
+  hayBale: [
+    "..............",
+    "..............",
+    "..............",
+    ".yyyYyyyyYyyy.",
+    "yyYyryyyyryYyy",
+    "yyyyryyYyryyyy",
+    "yYyyryyyyryyYy",
+    "yyyyryYyyryyyy",
+    "yyYyryyyyryYyy",
+    "yyyyryyyYryyyy",
+    "YyyyryyyyryyyY",
+    "YYYYrYYYYrYYYY",
+    "..............",
+    "..............",
+  ],
+  trough: [
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "WwwwwwwwwwwwwW",
+    "WbbllbbbbbbbbW",
+    "WbBbbbbBbblbbW",
+    "WwwwwwwwwwwwwW",
+    "WWwwwwwwwwwwWW",
+    ".WwwwwwwwwwwW.",
+    ".W..........W.",
+    ".W..........W.",
+    "..............",
+  ],
+  bucket: [
+    "..............",
+    "..............",
+    "..............",
+    "....MMMMMM....",
+    "...M......M...",
+    "..M........M..",
+    "..moooooooom..",
+    "..mmooOoooMm..",
+    "..mmmmmmmmMm..",
+    "...mmmmmmMm...",
+    "...mmmmmmMm...",
+    "...mmmmmmMm...",
+    "....MMMMMM....",
+    "..............",
+  ],
+  barrel: [
+    "..............",
+    "..............",
+    "....WWWWWW....",
+    "...wwwwwwwW...",
+    "...MMMMMMMM...",
+    "..wwwwwwwwwW..",
+    "..wwwwwwwwwW..",
+    "..wwwwwwwwwW..",
+    "..MMMMMMMMMM..",
+    "..wwwwwwwwwW..",
+    "...wwwwwwwW...",
+    "...MMMMMMMM...",
+    "....WWWWWW....",
+    "..............",
+  ],
+  flowers: [
+    "..............",
+    "...pp...pp....",
+    "..pyyp.pyyp...",
+    "...pp.g.pp....",
+    "....g.g.g..pp.",
+    ".....ggg..pyyp",
+    "..g..gg....pp.",
+    "...gGgggGgg...",
+    "..cccccccccc..",
+    "...cccccccC...",
+    "...cccccccC...",
+    "....ccccccC...",
+    "....CCCCCC....",
+    "..............",
+  ],
+  lantern: [
+    "......kk......",
+    ".....k..k.....",
+    "....kkkkkk....",
+    "....kLLLLk....",
+    "....kLllLk....",
+    "....kLllLk....",
+    "....kLLLLk....",
+    "....kkkkkk....",
+    "......kk......",
+    "......kk......",
+    "......kk......",
+    ".....kkkk.....",
+    "....kkkkkk....",
+    "..............",
+  ],
+  wheelbarrow: [
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "rrrrrrrrrr....",
+    "RrrrrrrrrRww..",
+    ".RrrrrrrrR..ww",
+    "..RRRRRRR.....",
+    "...kk...w.....",
+    "..kmmk..w.....",
+    "..kmmk..w.....",
+    "...kk.........",
+    "..............",
+    "..............",
+  ],
+  cat: [
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "..O.O.........",
+    "..oOoo...oo...",
+    ".oeooeo.oooo..",
+    ".oooppoooOooo.",
+    "..oooooOoooOo.",
+    "..ooOooooooOo.",
+    "...oooooOoooo.",
+    "....ooooooo...",
+    "..............",
+  ],
+};
+const ITEM_COLORS = {y:'#e8c860',Y:'#c9a440',r:'#9c6b3c',w:'#9a6a3a',W:'#6a4424',b:'#6fb3e0',B:'#4f93c4',l:'#d6eefa',
+  m:'#a7b0b5',M:'#727b80',o:'#e8c25a',O:'#b98d2c',p:'#ef8fb3',g:'#7bbf4a',G:'#4f8a2b',c:'#c9703f',C:'#93502a',
+  k:'#3a3330',L:'#ffe9a6',R:'#8f3624'};
+const ITEM_COLOR_OVERRIDE = {
+  wheelbarrow:{r:'#c8553d',R:'#8f3624',k:'#3a3330',m:'#a7b0b5',w:'#9a6a3a'},
+  cat:{o:'#e89a4a',O:'#b86a2a',e:'#3a2a1a',p:'#f2a0b0'},
+  lantern:{l:'#ffc94a'},
+  barrel:{M:'#5b5f63'},
+};
+
+/* ---------- saddles: hanging on the wall, and worn by horses ---------- */
+const SADDLE_WALL = [
+  "..A......A....",
+  "..aA....Aa....",
+  "..aaaaaaaa....",
+  ".pAaaaaaaAp...",
+  ".pppppppppp...",
+  "......A.......",
+  "......A.......",
+  ".....KKK......",
+  ".....K.K......",
+  ".....KKK......",
+];
+const SADDLE_ON_HORSE = [   // placed on the horse sprite at column 7, row 8
+  ".A.....A.",
+  ".aaaaaaa.",
+  "pAaaaaaAp",
+  "ppppppppp",
+  "....A....",
+  "....A....",
+  "....A....",
+  "....A....",
+  "...KKK...",
+  "...K.K...",
+];
+const BUBBLE = {
+  alert: [
+    ".wwwwwww.",
+    "wwwwRwwww",
+    "wwwwRwwww",
+    "wwwwRwwww",
+    "wwwwRwwww",
+    "wwwwwwwww",
+    "wwwwRwwww",
+    ".wwwwwww.",
+  ],
+  heart: [
+    ".wwwwwww.",
+    "wwppwppww",
+    "wpppppppw",
+    "wpppppppw",
+    "wwpppppww",
+    "wwwpppwww",
+    "wwwwpwwww",
+    ".wwwwwww.",
+  ],
+};
+const BUBBLE_COLORS = {w:'#ffffff', R:'#d43d2a', p:'#e8608a'};
+
+/* ---------- riding: gallop legs (replace the bottom 8 rows of the horse) ---------- */
+const LEGS_B = [   // stretched out — also used while jumping
+  "..MM.BBBSS........SSBBB.........",
+  ".MM.BBB..SS........SSBBB........",
+  ".M.BB.....SS........SS.BB.......",
+  "..33.......11........22.44......",
+  ".33.........11........22.44.....",
+  "33...........11........22.44....",
+  "HH...........HH........HH..HH...",
+  "................................",
+];
+const LEGS_C = [   // legs gathered underneath
+  "..MM.BBBSS........SSBBB.........",
+  "..MM..BBSS.......SSBB...........",
+  "..M....BBSS.....SSBB............",
+  "..M.....33.11..22.44............",
+  "........33.11..22.44............",
+  "........33.11..22.44............",
+  "........HH.HH..HH.HH............",
+  "................................",
+];
+const HORSE_FRAMES = {b: SPR.horse.slice(0,16).concat(LEGS_B), c: SPR.horse.slice(0,16).concat(LEGS_C)};
+// the farmer sitting in the saddle
+KID.ride = [
+  "....YYYY....",
+  "...YyyyyY...",
+  "..YYYYYYYYYY",
+  "...hhsssss..",
+  "...hhsssess.",
+  "...hhsssssss",
+  "....hssss...",
+  "....rrRrr...",
+  "...rrRrrrs..",
+  "...rrRrr.s..",
+  "....rRrr....",
+  "....bbbbb...",
+  "....bbbbbb..",
+  ".......bb...",
+  ".......kk...",
+];
+const JUMP_SPR = {
+  fence: [   // red-and-white show jumping poles
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "rrwwrrwwrrwwrrww",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "rrwwrrwwrrwwrrww",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "kkkk........kkkk",
+  ],
+  tall: [
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "bbwwbbwwbbwwbbww",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "bbwwbbwwbbwwbbww",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "bbwwbbwwbbwwbbww",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    ".kk..........kk.",
+    "kkkk........kkkk",
+  ],
+  hedge: [
+    "....gg..ggg..gg.......",
+    "..ggGgggGgggggGgg.....",
+    ".gggggGggggGggggggg...",
+    "gGgggggggGggggGgggggg.",
+    "gggGggggggggggggggGgg.",
+    "ggggggGggggGgggggggggg",
+    "gGggggggggggggGggggggg",
+    "WWWWWWWWWWWWWWWWWWWWWW",
+  ],
+  coin: [
+    "..yyyy..",
+    ".yyYYyy.",
+    "yyYyyYyy",
+    "yyYyyYyy",
+    "yyYyyYyy",
+    "yyYyyYyy",
+    ".yyYYyy.",
+    "..yyyy..",
+  ],
+  cloud: [
+    "....wwww........",
+    "..wwwwwwww.www..",
+    ".wwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwww",
+    ".wwwwwwwwwwwwww.",
+  ],
+};
+const JUMP_COLORS = {k:'#f2efe6', w:'#ffffff', r:'#d0533f', b:'#4a7fc0', g:'#6aa83f', G:'#4f8a2b', W:'#7a5232', y:'#f2c94c', Y:'#b98d2c'};
+const OUTLINE = '#2b1d15';
+
+/* ---------- coat colors ---------- */
+const PALETTE = {
+  'Chestnut':     {body:'#b4532a', mane:'#7e3416'},
+  'Bay':          {body:'#8a4b24', mane:'#1d1512', points:'#1d1512'},
+  'Black':        {body:'#2a2423', mane:'#141111'},
+  'Palomino':     {body:'#e2b95b', mane:'#f7eed6'},
+  'Buckskin':     {body:'#d8ad62', mane:'#231a14', points:'#231a14'},
+  'Smoky Black':  {body:'#41352e', mane:'#1a1614'},
+  'Cremello':     {body:'#f2e4cb', mane:'#fbf5ea', eye:'#5b9bd0'},
+  'Perlino':      {body:'#efdbb8', mane:'#d6aa7f', points:'#dfbd95', eye:'#5b9bd0'},
+  'Smoky Cream':  {body:'#e8d6bb', mane:'#c7ab8c', eye:'#5b9bd0'},
+  'Red Dun':      {body:'#d49c6c', mane:'#9b4b27', stripe:'#9b4b27'},
+  'Bay Dun':      {body:'#c79e70', mane:'#2a2019', points:'#2a2019', stripe:'#2a2019'},
+  'Grulla':       {body:'#8d8579', mane:'#26221f', points:'#26221f', stripe:'#26221f'},
+  'Dunalino':     {body:'#e8ca8c', mane:'#fbf1d9', stripe:'#c4914d'},
+  'Dunskin':      {body:'#dcc190', mane:'#2a2019', points:'#2a2019', stripe:'#2a2019'},
+  'Smoky Grulla': {body:'#a69d90', mane:'#3b352f', points:'#3b352f', stripe:'#3b352f'},
+  'Gray':         {body:'#c6cacc', mane:'#f0f0f0', dapple:'#e4e7e8'},
+};
+const SIL = {body:'#d2c9b6', mane:'#d2c9b6'};
+const WHITE = '#fbf8f0', WHITE_SH = '#e3ddd0';
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const now = () => Date.now();
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rand = (a,b) => a + Math.random()*(b-a);
+const randi = (a,b) => Math.floor(rand(a, b+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const round5 = v => Math.max(5, Math.round(v/5)*5);
+function mixHex(a, b){
+  const p = h => { const n = parseInt(h.slice(1),16); return [n>>16, n>>8&255, n&255]; };
+  const x = p(a), y = p(b);
+  return '#' + x.map((v, i) => Math.round((v + y[i]) / 2).toString(16).padStart(2,'0')).join('');
+}
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1),16); const ch = [n>>16, n>>8&255, n&255];
+  return '#' + ch.map(v => Math.round(amt<0 ? v*(1+amt) : v+(255-v)*amt)).map(v => v.toString(16).padStart(2,'0')).join('');
+}
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function fmt(sec){ sec=Math.max(0,Math.ceil(sec)); const m=Math.floor(sec/60), s=sec%60; return m ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`; }
+
+/* ---------- sprite renderer ---------- */
+const sprCache = new Map();
+const urlCache = new Map();
+// add a 1-pixel empty border so outlines fit, and make all rows the same width
+function pad(rows){
+  const w = Math.max(...rows.map(r => r.length)) + 2;
+  const line = '.'.repeat(w);
+  return [line, ...rows.map(r => ('.' + r).padEnd(w, '.')), line];
+}
+function mapCanvas(key, rows, colors, outline=OUTLINE){
+  if (sprCache.has(key)) return sprCache.get(key);
+  const grid = pad(rows).map(r => [...r].map(ch => colors[ch] || null));
+  const c = gridToCanvas(grid, outline);
+  sprCache.set(key, c);
+  return c;
+}
+function toURL(key, canvas){
+  if (!urlCache.has(key)) urlCache.set(key, canvas.toDataURL());
+  return urlCache.get(key);
+}
+function gridToURL(grid, outline){ return gridToCanvas(grid, outline).toDataURL(); }
+function gridToCanvas(grid, outline){
+  const h = grid.length, w = grid[0].length;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  for (let y=0; y<h; y++) for (let x=0; x<w; x++){
+    let col = grid[y][x];
+    if (!col && outline){
+      const near = (grid[y-1]&&grid[y-1][x]) || (grid[y+1]&&grid[y+1][x]) || grid[y][x-1] || grid[y][x+1];
+      if (near) col = outline;
+    }
+    if (col){ ctx.fillStyle = col; ctx.fillRect(x,y,1,1); }
+  }
+  return c;
+}
+function itemCanvas(type){
+  return mapCanvas('item:'+type, ITEM_SPR[type], {...ITEM_COLORS, ...(ITEM_COLOR_OVERRIDE[type]||{})});
+}
+function itemImg(type, scale=3){
+  const c = itemCanvas(type);
+  return `<img class="spr" src="${toURL('item:'+type, c)}" width="${c.width*scale}" height="${c.height*scale}" alt="${type}">`;
+}
+function saddleColors(type){ const s = SADDLES[type]; return {a:s.a, A:s.A, p:s.p, K:'#b8c0c4'}; }
+function saddleCanvas(type){ return mapCanvas('saddle:'+type, SADDLE_WALL, saddleColors(type)); }
+function saddleImg(type, scale=2){
+  const c = saddleCanvas(type);
+  return `<img class="spr" src="${toURL('saddle:'+type, c)}" width="${c.width*scale}" height="${c.height*scale}" alt="saddle">`;
+}
+function cropImg(name, size=48){
+  const key = 'crop:'+name;
+  if (!sprCache.has(key)){
+    const grid = SPR[name].map(r => [...r].map(ch => CROP_COLORS[ch] || null));
+    sprCache.set(key, gridToURL(grid, OUTLINE));
+  }
+  return `<img class="spr" src="${sprCache.get(key)}" width="${size}" height="${size}" alt="${name}">`;
+}
+
+// look = {color, pinto, appy, face, socks, seed, foal, sil, saddle}
+function horseURL(look){
+  const key = JSON.stringify(look);
+  return toURL(key, horseCanvas(look));
+}
+function horseCanvas(look){
+  const key = JSON.stringify(look);
+  if (sprCache.has(key)) return sprCache.get(key);
+  const rows = look.foal ? SPR.foal : look.frame ? HORSE_FRAMES[look.frame] : SPR.horse;
+  const P = look.sil ? SIL : PALETTE[look.color];
+  const rng = mulberry(look.seed || 7);
+  const body = P.body, pts = P.points;
+  const nSocks = look.sil ? 0 : Math.min(4, (look.socks||0) + (look.pinto ? 2 : 0));
+  const sockLegs = ['4','3','2','1'].slice(0, nSocks);
+  let firstF = -1;
+  const coat = new Set(['B','L','b','S','D','F']);
+  const grid = rows.map((row, y) => [...row].map((ch, x) => {
+    if (look.sil) return ch === '.' ? null : P.body;
+    switch (ch){
+      case '.': return null;
+      case 'B': return body;
+      case 'L': return shade(body, .14);
+      case 'b': return shade(body, -.1);
+      case 'S': return shade(body, -.22);
+      case 'D': return P.stripe || body;
+      case 'F':
+        if (firstF < 0) firstF = y;
+        if (look.face === 'blaze' || (look.face === 'star' && y === firstF)) return WHITE;
+        return body;
+      case 'M': return P.mane;
+      case 'I': return shade(body, -.35);
+      case 'E': return P.eye || '#1a1210';
+      case 'N': return shade(body, -.45);
+      case 'H': return '#4a3b30';
+      case '1': case '2':
+        if (sockLegs.includes(ch)) return WHITE_SH;
+        return pts ? shade(pts, -.12) : shade(body, -.22);
+      case '3': case '4':
+        if (sockLegs.includes(ch)) return WHITE;
+        return pts || body;
+    }
+    return null;
+  }));
+  if (!look.sil){
+    const isCoat = (x,y) => coat.has(rows[y][x]) && !(rows[y][x]==='F' && grid[y][x]===WHITE);
+    const far = (x,y) => rows[y][x] === 'S';
+    const W = rows[0].length, H = rows.length;
+    // gray dapples
+    if (P.dapple) for (let y=0;y<H;y++) for (let x=0;x<W;x++)
+      if (isCoat(x,y) && rng() < .18) grid[y][x] = P.dapple;
+    // appaloosa blanket over the hips + spots
+    if (look.appy){
+      const rumpX = look.foal ? 10 : 13, rumpY = look.foal ? 13 : 15;
+      const spot = pts ? shade(pts, .05) : shade(body, body === '#2a2423' ? .1 : -.3);
+      for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+        if (!isCoat(x,y)) continue;
+        if (x <= rumpX && y <= rumpY && y >= 9){
+          grid[y][x] = rng() < .2 ? spot : (far(x,y) ? WHITE_SH : WHITE);
+        } else if (rng() < .05) grid[y][x] = WHITE;
+      }
+    }
+    // pinto (tobiano) white patches
+    if (look.pinto){
+      const rng = mulberry((look.seed || 7) + 1);   // own dice, so patches match in every animation frame
+      const blobs = [];
+      const n = 2 + Math.floor(rng()*2);
+      for (let i=0;i<n;i++) blobs.push({
+        x: (look.foal ? 7 : 7) + rng()*(look.foal ? 11 : 15),
+        y: 9 + rng()*(look.foal ? 5 : 7),
+        rx: 2.5 + rng()*3, ry: 2 + rng()*3,
+      });
+      if (rng() < .5) blobs.push({x: look.foal?14:19, y: look.foal?8:9, rx:2.5, ry:3}); // shoulder/neck patch
+      for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+        if (!isCoat(x,y)) continue;
+        if (blobs.some(b => ((x-b.x)/b.rx)**2 + ((y-b.y)/b.ry)**2 <= 1))
+          grid[y][x] = far(x,y) ? WHITE_SH : WHITE;
+      }
+    }
+  }
+  // horse rug / sheet over the body
+  if (look.rug && !look.sil){
+    const R = RUG_COLORS[look.rug.kind][look.rug.color], kind = look.rug.kind;
+    const maxY = look.foal ? 13 : 15, maxX = look.foal ? 18 : 22;
+    const cov = (x, y) => y >= 9 && y <= maxY && x >= 4 && x <= maxX && rows[y] && coat.has(rows[y][x]);
+    const before = grid.map(r => r.slice());
+    for (let y=9; y<=maxY; y++) for (let x=4; x<=maxX; x++){
+      if (!cov(x, y)) continue;
+      let col;
+      if (kind === 'fly') col = (x + y) % 2 ? R.main : mixHex(before[y][x] || R.main, R.main);   // see-through mesh
+      else if (kind === 'fleece') col = (x*7 + y*3) % 5 === 0 ? shade(R.main, .3) : R.main;     // fluffy
+      else col = (y === 10 && x % 4 === 0) ? shade(R.main, .35) : R.main;                      // shiny waterproof
+      if (!cov(x, y+1) || !cov(x-1, y) || !cov(x+1, y)) col = R.trim;
+      grid[y][x] = col;
+    }
+  }
+  // saddle on top (grown-up horses only)
+  if (look.saddle && !look.foal && !look.sil){
+    const col = saddleColors(look.saddle);
+    SADDLE_ON_HORSE.forEach((row, dy) => [...row].forEach((ch, dx) => {
+      if (ch !== '.') grid[8+dy][7+dx] = col[ch];
+    }));
+  }
+  const canvas = gridToCanvas(grid, look.sil ? '#b9ae97' : OUTLINE);
+  sprCache.set(key, canvas);
+  return canvas;
+}
+function horseImg(look, scale=5, extra=''){
+  const w = (look.foal ? 26 : 32) * scale, h = 24 * scale;
+  return `<img class="spr ${extra}" src="${horseURL(look)}" width="${w}" height="${h}" alt="horse">`;
+}
+
+/* =========================================================
+   GENETICS (simplified real horse color genes)
+   Each gene = two copies; 0 = plain copy, 1 = the special one.
+   ========================================================= */
+const GENES = ['E','A','Cr','D','G','TO','LP'];
+const ALLELES = {E:['e','E'],A:['a','A'],Cr:['n','Cr'],D:['nd','D'],G:['g','G'],TO:['n','TO'],LP:['n','LP']};
+const GENE_NAME = {E:'Black base',A:'Bay',Cr:'Cream',D:'Dun',G:'Gray',TO:'Pinto',LP:'Appaloosa'};
+const MARKET_FREQ = {E:.5,A:.55,Cr:.12,D:.1,G:.07,TO:.07,LP:.06};
+const has = a => a[0]===1 || a[1]===1;
+const cnt = a => a[0] + a[1];
+
+function phen(g){
+  let color;
+  if (has(g.G)) color = 'Gray';
+  else {
+    const base = has(g.E) ? (has(g.A) ? 'Bay' : 'Black') : 'Chestnut';
+    const cr = cnt(g.Cr), dun = has(g.D);
+    if (cr === 2) color = {Chestnut:'Cremello', Bay:'Perlino', Black:'Smoky Cream'}[base];
+    else if (cr === 1) color = dun ? {Chestnut:'Dunalino', Bay:'Dunskin', Black:'Smoky Grulla'}[base]
+                                   : {Chestnut:'Palomino', Bay:'Buckskin', Black:'Smoky Black'}[base];
+    else color = dun ? {Chestnut:'Red Dun', Bay:'Bay Dun', Black:'Grulla'}[base] : base;
+  }
+  return {color, pinto: has(g.TO), appy: has(g.LP)};
+}
+const fullName = p => p.color + (p.pinto ? ' Pinto' : '') + (p.appy ? ' Appaloosa' : '');
+function randomGenes(){
+  const g = {};
+  for (const k of GENES) g[k] = [Math.random()<MARKET_FREQ[k]?1:0, Math.random()<MARKET_FREQ[k]?1:0];
+  return g;
+}
+function inherit(m, s){
+  const g = {};
+  for (const k of GENES) g[k] = [pick(m.genes[k]), pick(s.genes[k])];
+  return g;
+}
+function odds(m, s){
+  const res = {};
+  const per = GENES.map(k => { const o=[]; for (const x of m.genes[k]) for (const y of s.genes[k]) o.push([x,y]); return o; });
+  const g = {};
+  (function rec(i, p){
+    if (i === GENES.length){
+      const ph = phen(g), n = fullName(ph);
+      if (!res[n]) res[n] = {p:0, ph};
+      res[n].p += p; return;
+    }
+    for (const o of per[i]){ g[GENES[i]] = o; rec(i+1, p/4); }
+  })(0, 1);
+  return Object.entries(res).sort((a,b) => b[1].p - a[1].p);
+}
+
+/* ---------- game data ---------- */
+const CROPS = {
+  hay:    {name:'Hay',     seed:4,  time:30, yield:3, sell:3},
+  carrot: {name:'Carrots', seed:8,  time:60, yield:3, sell:6},
+  oats:   {name:'Oats',    seed:12, time:90, yield:3, sell:9},
+};
+const FOOD = {
+  hay:    {hunger:35, happy:0,  msg:'Munch munch!'},
+  oats:   {hunger:30, happy:10, msg:'Yum, oats!'},
+  carrot: {hunger:5,  happy:20, msg:'Crunch! A carrot!'},
+};
+const COLOR_VALUE = {Chestnut:80,Bay:80,Black:110,Palomino:160,Buckskin:160,'Smoky Black':150,Cremello:240,Perlino:240,'Smoky Cream':260,
+  'Red Dun':180,'Bay Dun':180,Grulla:220,Dunalino:280,Dunskin:280,'Smoky Grulla':300,Gray:140};
+const BOOK = [
+  ['Chestnut','A red-gold coat. Needs two e genes.'],
+  ['Bay','Brown body with black legs, mane and tail. Needs E and A.'],
+  ['Black','Needs an E gene and two a genes.'],
+  ['Palomino','Chestnut + one Cream gene = golden!'],
+  ['Buckskin','Bay + one Cream gene.'],
+  ['Smoky Black','Black + one Cream gene. Looks almost black.'],
+  ['Cremello','Chestnut + TWO Cream genes. Blue eyes!'],
+  ['Perlino','Bay + TWO Cream genes. Blue eyes!'],
+  ['Smoky Cream','Black + TWO Cream genes. Blue eyes!'],
+  ['Red Dun','Chestnut + Dun gene. Look for the back stripe.'],
+  ['Bay Dun','Bay + Dun gene.'],
+  ['Grulla','Black + Dun gene. A mousy gray-brown.'],
+  ['Dunalino','Palomino + Dun gene.'],
+  ['Dunskin','Buckskin + Dun gene.'],
+  ['Smoky Grulla','Smoky Black + Dun gene. Super rare!'],
+  ['Gray','The Gray gene turns any color silvery.'],
+  ['Pinto','Big white patches from the Tobiano gene.'],
+  ['Appaloosa','A spotted blanket from the Leopard gene.'],
+];
+const NAMES = ['Daisy','Maple','Pippin','Clover','Biscuit','Willow','Hazel','Comet','Juniper','Pepper','Thunder','Luna','Ginger','Misty','Storm','Honey','Bramble','Poppy','Rusty','Nutmeg','Shadow','Sparrow','Toffee','Aspen','Fudge','Blossom','Cinder','Ember','Fern','Olive','Rowan','Saffron','Teddy','Velvet','Ziggy','Acorn','Bluebell','Caramel','Dusty','Pebble','Marble','Button','Dandelion','Moonbeam','Sprinkles','Waffles','Nugget','Cocoa','Jasper','Tulip'];
+const SHOP = {
+  hayBale:     {name:'Hay bale',     price:30,  desc:'Cozy! Comes with 10 hay for your horses.'},
+  bucket:      {name:'Feed bucket',  price:25,  desc:'A shiny bucket full of oats.'},
+  barrel:      {name:'Barrel',       price:35,  desc:'Good old wooden barrel.'},
+  flowers:     {name:'Flower pot',   price:40,  desc:'Pretty pink flowers.'},
+  lantern:     {name:'Lantern',      price:45,  desc:'A warm glow for the stable.'},
+  trough:      {name:'Water trough', price:60,  desc:'Fresh water for thirsty horses.'},
+  wheelbarrow: {name:'Wheelbarrow',  price:70,  desc:'For mucking out the stalls.'},
+  cat:         {name:'Barn cat',     price:120, desc:'A sleepy, purring friend.'},
+};
+const SADDLES = {
+  brown: {name:'Classic brown', price:80,  a:'#8b5a2b', A:'#5e3a1a', p:'#efe6d2'},
+  black: {name:'Midnight black',price:100, a:'#3a3330', A:'#1a1614', p:'#c94b4b'},
+  red:   {name:'Cherry red',    price:120, a:'#c0452f', A:'#7d2619', p:'#f4ead0'},
+  blue:  {name:'Sky blue',      price:120, a:'#4a7fc0', A:'#2b5288', p:'#f4f0e4'},
+  green: {name:'Clover green',  price:120, a:'#5f9a3e', A:'#3d6a25', p:'#f6edc9'},
+  pink:  {name:'Bubblegum pink',price:140, a:'#e581a8', A:'#b4537a', p:'#fff2f7'},
+  purple:{name:'Royal purple',  price:160, a:'#8a5cb8', A:'#5c3a80', p:'#f3d97a'},
+  gold:  {name:'Champion gold', price:250, a:'#e0ad30', A:'#9c7414', p:'#7b3fa0'},
+};
+// Bundles: several things together for less than buying them one by one
+/* ---------- weather and horse rugs ---------- */
+const WEATHER = {
+  sunny: {icon:'☀️', name:'Sunny', needs:'fly',    why:'Flies are bugging me', badIcon:'🪰'},
+  rain:  {icon:'🌧️', name:'Rainy', needs:'rain',   why:"I'm all wet",          badIcon:'☔'},
+  snow:  {icon:'❄️', name:'Snowy', needs:'fleece', why:"Brrr, I'm cold",       badIcon:'🥶'},
+};
+const RUG_KINDS = {
+  fly:    {name:'Fly sheet',  icon:'🪰', weather:'sunny', price:50, desc:'A light mesh sheet that keeps flies away on sunny days.'},
+  rain:   {name:'Rain sheet', icon:'☔', weather:'rain',  price:60, desc:'A shiny waterproof sheet for rainy days.'},
+  fleece: {name:'Fleece rug', icon:'🧣', weather:'snow',  price:70, desc:'A fluffy, warm rug for snowy days.'},
+};
+const RUG_COLORS = {
+  fly:    {white:{name:'White', main:'#f4f1ea', trim:'#7a9cc6'}, mint:{name:'Mint', main:'#bfe8d4', trim:'#3f8a6a'}, lavender:{name:'Lavender', main:'#d7c8f0', trim:'#7a5cb0'}},
+  rain:   {navy:{name:'Navy', main:'#2f4a7a', trim:'#e0ad30'}, red:{name:'Red', main:'#b8402f', trim:'#2a2a2a'}, green:{name:'Forest green', main:'#3f7a46', trim:'#f2efe6'}},
+  fleece: {purple:{name:'Purple', main:'#8a5cb8', trim:'#f3d97a'}, blue:{name:'Blue', main:'#5b8fd0', trim:'#ffffff'}, pink:{name:'Pink', main:'#e88fb0', trim:'#ffffff'}},
+};
+const rugOf = h => { const r = (state.rugs || []).find(r => r.id === h.rug); return r ? {kind: r.kind, color: r.color} : null; };
+const rugOK = h => { const r = rugOf(h); return !!r && r.kind === WEATHER[state.weather || 'sunny'].needs; };
+function rollWeather(){ const r = Math.random(); return r < .45 ? 'sunny' : r < .8 ? 'rain' : 'snow'; }
+function rugSwatch(kind, color){ const c = RUG_COLORS[kind][color]; return `<span class="rugsw" style="background:${c.main};border-color:${c.trim}"></span>`; }
+
+const BUNDLES = [
+  {id:'feed',    name:'Feed sack bundle',   desc:'A big stack of food for hungry horses.',
+   items:{hay:20, oats:10, carrot:10}, price:120},
+  {id:'cozy',    name:'Cozy stable bundle', desc:'Three decorations to make your stable homey.',
+   decor:['hayBale','flowers','lantern'], price:90},
+  {id:'rider',   name:"Rider's bundle",     desc:'A new saddle plus carrot treats for after the ride.',
+   saddle:'blue', items:{carrot:10}, price:140},
+  {id:'breeder', name:"Breeder's bundle",   desc:'3 free DNA tests and oats for your mares.',
+   dna:3, items:{oats:10}, price:80},
+  {id:'barn',    name:'Barn raising bundle',desc:'Two new stalls, a hay bale and 10 hay to welcome new horses.',
+   stalls:2, decor:['hayBale'], items:{hay:10}},
+  {id:'weather', name:'All-weather bundle', desc:'One of each: fly sheet, rain sheet and fleece rug. Ready for anything!',
+   rugs:[['fly','white'],['rain','navy'],['fleece','purple']], price:135},
+  {id:'deluxe',  name:'Champion bundle',    desc:'The golden saddle, a barn cat, and a feast of oats and carrots!',
+   saddle:'gold', decor:['cat'], items:{oats:15, carrot:15}, price:390},
+];
+function bundleWorth(b){
+  let w = 0;
+  for (const [k, n] of Object.entries(b.items || {})) w += n * CROPS[k].sell;
+  for (const d of b.decor || []) w += SHOP[d].price;
+  if (b.saddle) w += SADDLES[b.saddle].price;
+  for (const [k] of b.rugs || []) w += RUG_KINDS[k].price;
+  if (b.dna) w += b.dna * DNA_COST;
+  if (b.stalls) w += stableCost();
+  return w;
+}
+const bundlePrice = b => b.price || round5(bundleWorth(b) * .75);
+const T = {pregnancy:45, grow:90, rest:30, brush:15}; // seconds
+
+/* ---------- day & night ----------
+   One game day = 8 real minutes, from 6:00 in the morning to midnight.
+   Horses must be out in the paddock by 10:00, and come back in at 21:00. */
+const DAY_MS = 8 * 60 * 1000, MORNING_END = 10, NIGHT = 21;
+const HAND_COST = 500;
+function clock(t = now()){
+  const e = Math.max(0, t - state.dayEpoch);
+  const idx = Math.floor(e / DAY_MS), hour = 6 + (e % DAY_MS) / DAY_MS * 18;
+  return {idx, day: idx + 1, hour};
+}
+const clockText = h => `${String(Math.floor(h)).padStart(2,'0')}:${String(Math.floor((h % 1) * 4) * 15).padStart(2,'0')}`;
+const isDaytime = () => clock().hour < NIGHT;
+const outCount = () => state.horses.filter(h => h.out).length;
+const BREED_COST = 40, DNA_COST = 25, REFRESH_COST = 15;
+const SAVE_KEY = 'cloverHillStables_v1';
+
+/* ---------- state ---------- */
+let state;
+function makeHorse(o={}){
+  return Object.assign({
+    id: state.nextId++, name: pickName(), sex: pick(['F','M']), genes: randomGenes(),
+    speed: randi(15,55), stamina: randi(15,55), temper: randi(15,55),
+    hunger: 80, happy: 70, adultAt: 0, preg: null, restUntil: 0, brushAt: 0,
+    face: pick(['none','none','star','blaze']), socks: randi(0,2), tested: false,
+    seed: Math.floor(Math.random()*1e9),
+  }, o);
+}
+function newGame(){
+  state = {v:1, coins:150, inv:{hay:12,carrot:4,oats:4},
+    plots: Array.from({length:4}, () => ({crop:null, at:0})),
+    cap:4, horses:[], market:[], marketAt:0, found:{}, nextId:1, last:now(),
+    sel:{F:null, M:null}, tab:'stable', intro:true,
+    decor:[{id:0,type:'hayBale',x:14,y:4}], saddles:[{id:0,type:'brown'}],
+    player:{x:2, y:5, dir:'down', carry:null, map:'barn', leading:null}, seed:'hay',
+    dayEpoch: now(), day: 0, stableHand: false,
+    weather: 'sunny', rugs: [{id:1, kind:'fly', color:'white'}, {id:2, kind:'rain', color:'navy'}]};
+  state.horses.push(makeHorse({name:'Daisy', sex:'F', face:'blaze', socks:1, speed:40, stamina:35, temper:50,
+    genes:{E:[1,0],A:[1,0],Cr:[0,0],D:[0,0],G:[0,0],TO:[1,0],LP:[0,0]}}));
+  state.horses.push(makeHorse({name:'Sunny', sex:'M', face:'star', socks:2, speed:35, stamina:45, temper:40,
+    genes:{E:[0,0],A:[1,0],Cr:[1,0],D:[0,0],G:[0,0],TO:[0,0],LP:[0,0]}}));
+  state.horses.forEach(h => discover(h, false));
+  refreshMarket(true);
+}
+function pickName(){
+  const used = new Set([...(state.horses||[]), ...(state.market||[])].map(h => h.name));
+  const free = NAMES.filter(n => !used.has(n));
+  return pick(free.length ? free : NAMES);
+}
+const byId = id => state.horses.find(h => h.id === id);
+const isFoal = h => h.adultAt > now();
+const saddleOf = h => { const s = state.saddles.find(s => s.id === h.saddle); return s ? s.type : null; };
+const look = h => ({...phen(h.genes), face:h.face, socks:h.socks, seed:h.seed, foal:isFoal(h), saddle: isFoal(h) ? null : saddleOf(h), rug: rugOf(h)});
+const sexWord = h => h.sex === 'F' ? (isFoal(h) ? 'Filly' : 'Mare') : (isFoal(h) ? 'Colt' : 'Stallion');
+function value(h){
+  const p = phen(h.genes);
+  let v = COLOR_VALUE[p.color] + (p.pinto?120:0) + (p.appy?150:0) + (h.speed+h.stamina+h.temper)/3*1.5;
+  if (isFoal(h)) v *= .6;
+  return round5(v);
+}
+function mood(h){
+  if (h.happy >= 75) return 'Very happy 😄';
+  if (h.happy >= 50) return 'Happy 🙂';
+  if (h.happy >= 25) return 'Grumpy 😐';
+  return 'Sad 😢';
+}
+function readiness(h){
+  if (isFoal(h)) return 'Too young';
+  if (h.preg) return 'Expecting a foal';
+  if (h.restUntil > now()) return `Resting ${fmt((h.restUntil-now())/1000)}`;
+  if (h.hunger < 30) return 'Too hungry';
+  if (h.happy < 50) return 'Needs to be happier';
+  return null;
+}
+function status(h){
+  const t = now();
+  if (h.preg){
+    if (h.preg.due <= t) return '🍼 Foal is ready! Make room in the stable!';
+    return `🤰 Foal due in ${fmt((h.preg.due-t)/1000)}`;
+  }
+  if (isFoal(h)) return `🌱 Grows up in ${fmt((h.adultAt-t)/1000)}`;
+  if (state.player.leading === h.id) return '🐴 Following you';
+  if (h.out && !rugOK(h)){ const W = WEATHER[state.weather || 'sunny']; return `${W.badIcon} ${W.why}! I need a ${RUG_KINDS[W.needs].name.toLowerCase()}.`; }
+  if (h.out) return '🌳 Out in the paddock';
+  if (h.restUntil > t) return `💤 Resting ${fmt((h.restUntil-t)/1000)}`;
+  if (clock().hour >= MORNING_END && clock().hour < NIGHT) return '😢 Stuck inside — take me to the paddock!';
+  if (h.hunger < 25) return '😟 Very hungry!';
+  return '';
+}
+function discover(h, reward=true){
+  const p = phen(h.genes);
+  const keys = [p.color]; if (p.pinto) keys.push('Pinto'); if (p.appy) keys.push('Appaloosa');
+  for (const k of keys) if (!state.found[k]){
+    state.found[k] = true;
+    if (reward){ state.coins += 50; toast(`📖 New in your Horse Book: ${k}! +50 🪙`, 'gold'); }
+  }
+}
+function decay(h, sec){
+  const HR = .08, HAP = .04, HUNGRY = .2;
+  const tLow = Math.max(0, (h.hunger - 25) / HR);
+  const lowSec = Math.max(0, sec - tLow);
+  h.hunger = clamp(h.hunger - HR*sec, 0, 100);
+  const cozy = 1 - decorBonus();
+  h.happy = clamp(h.happy - HAP*cozy*sec - HUNGRY*lowSec, 0, 100);
+}
+// each decoration makes happiness drop 5% slower (up to 50%)
+const decorBonus = () => Math.min(.5, (state.decor ? state.decor.length + (state.player.carry ? 1 : 0) : 0) * .05);
+function refreshMarket(free){
+  state.market = [];
+  for (let i=0; i<3; i++) state.market.push(makeHorse({hunger:90, happy:70}));
+  state.marketAt = now() + 180000;
+}
+const marketPrice = h => round5(value(h) * 1.3);
+const plotCost = () => 50 + (state.plots.length - 4) * 40;
+const stableCost = () => 150 * (state.cap - 2) / 2;
+
+/* ---------- UI helpers ---------- */
+function toast(msg, kind=''){
+  const el = document.createElement('div'); el.className = 'toast ' + kind; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+  while ($('#toasts').children.length > 4) $('#toasts').firstChild.remove();
+}
+function pop(emoji, src){
+  const r = src ? src.getBoundingClientRect() : {left:innerWidth/2, top:innerHeight/2, width:0};
+  const el = document.createElement('div'); el.className = 'pop'; el.textContent = emoji;
+  el.style.left = (r.left + r.width/2 - 11) + 'px'; el.style.top = (r.top - 6) + 'px';
+  document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
+}
+const modalQueue = [];
+function showModal(html, after){
+  if ($('#modal').classList.contains('on')){ modalQueue.push([html, after]); return; }
+  $('#mbox').classList.remove('wide');
+  $('#mbox').innerHTML = html; $('#modal').classList.add('on');
+  if (after) after();
+}
+function closeModal(){
+  openHorse = null;
+  $('#modal').classList.remove('on');
+  const next = modalQueue.shift();
+  if (next) showModal(...next);
+}
+function nameModal(h, title, sub){
+  showModal(`<div class="mpic">${horseImg(look(h), 6, 'bob')}</div>
+    <h2>${title}</h2><p>${sub}</p>
+    <input id="nameIn" maxlength="16" value="${esc(h.name)}" data-id="${h.id}">
+    <button class="primary" data-act="saveName" data-id="${h.id}">Save name</button>`,
+    () => { const i = $('#nameIn'); i.focus(); i.select(); });
+}
+function bar(v, kind, id){
+  const cls = v < 25 ? 'low' : v < 50 ? 'mid' : '';
+  return `<div class="bar"><i class="${cls}" data-live="${kind}" data-id="${id}" style="width:${v}%"></i></div>`;
+}
+function statBar(v){ return `<div class="bar stat"><i style="width:${v}%"></i></div>`; }
+function genesHTML(h){
+  return `<div class="genes">${GENES.map(k => {
+    const a = [...h.genes[k]].sort((x,y) => y-x).map(i => ALLELES[k][i]).join('/');
+    return `<span class="gene ${has(h.genes[k])?'on':''}" title="${GENE_NAME[k]}">${GENE_NAME[k]} ${a}</span>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- views ---------- */
+function hud(){
+  const c = clock(), icon = c.hour < MORNING_END ? '🌅' : c.hour < 18 ? '☀️' : c.hour < NIGHT ? '🌇' : '🌙';
+  const W = WEATHER[state.weather || 'sunny'];
+  const clockChip = `<span class="chip">${icon} Day ${c.day} · ${clockText(c.hour)}</span><span class="chip" title="Today's weather">${W.icon} ${W.name}</span>`;
+  const found = BOOK.filter(([k]) => state.found[k]).length;
+  return `${clockChip}<span class="chip">🪙 ${state.coins}</span>
+    <span class="chip">🌿 ${state.inv.hay}</span><span class="chip">🥕 ${state.inv.carrot}</span><span class="chip">🌾 ${state.inv.oats}</span>
+    <span class="chip">🐴 ${state.horses.length}/${state.cap}</span><span class="chip">📖 ${found}/${BOOK.length}</span>`;
+}
+const TABS = [['stable','🏡 Farm'],['farm','🧺 Storage'],['breed','💞 Breeding'],['ride','🏇 Riding'],['market','🏷️ Market'],['book','📖 Horse Book']];
+function tabsHTML(){ return TABS.map(([k,l]) => `<button class="${state.tab===k?'on':''}" data-act="tab" data-arg="${k}">${l}</button>`).join(''); }
+
+function sceneHTML(){
+  return `<div class="panel scene-wrap">
+    <div class="daybanner" id="dayBanner"></div>
+    <canvas id="scene" width="${COLS*TILE}" height="${ROWS*TILE}"></canvas>
+    <div class="scene-ui">
+      <div class="dpad">
+        <button class="u" data-dir="up">▲</button><button class="l" data-dir="left">◀</button>
+        <button class="d" data-dir="down">▼</button><button class="r" data-dir="right">▶</button>
+      </div>
+      <div class="hint" id="hint"></div>
+      <button class="primary actbtn" data-act="interact">E</button>
+    </div>
+    ${curMap() === 'farm' ? `<div class="seedbar"><b>Seeds to plant:</b>
+      ${Object.entries(CROPS).map(([k, c], i) => `<button class="${(state.seed||'hay')===k?'on':''}" data-act="seed" data-arg="${k}">${cropImg(k,22)} ${c.name} <small>${c.seed}🪙 · ${fmt(c.time)}</small> <kbd>${i+1}</kbd></button>`).join('')}
+      <span class="sbinv">In storage: 🌿${state.inv.hay} 🥕${state.inv.carrot} 🌾${state.inv.oats}</span></div>` : ''}
+    <div class="keys">Walk: <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · Use: <kbd>E</kbd> or <kbd>Space</kbd>${curMap() === 'farm' ? ' · Pick seeds: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>' : ''} · Or just click where you want to go!</div>
+  </div>`;
+}
+function rugRow(h){
+  const cur = (state.rugs || []).find(r => r.id === h.rug);
+  const used = new Set(state.horses.map(x => x.rug));
+  const need = WEATHER[state.weather || 'sunny'].needs;
+  const free = [...new Map(state.rugs.filter(r => !used.has(r.id)).map(r => [r.kind + ':' + r.color, r])).values()];
+  const btns = [];
+  if (cur) btns.push(`<button class="on" data-act="rug" data-id="${h.id}" data-arg="none" title="Take off">${RUG_KINDS[cur.kind].icon}${rugSwatch(cur.kind, cur.color)} ✕</button>`);
+  for (const r of free) btns.push(`<button class="${r.kind === need ? 'need' : ''}" data-act="rug" data-id="${h.id}" data-arg="${r.kind}:${r.color}" title="${RUG_COLORS[r.kind][r.color].name} ${RUG_KINDS[r.kind].name}${r.kind === need ? ' (right for today!)' : ''}">${RUG_KINDS[r.kind].icon}${rugSwatch(r.kind, r.color)}</button>`);
+  return `<div class="row"><span class="lbl">Rug</span><div class="saddles">${btns.join('') || '<span style="color:var(--muted)">Buy rugs at the 🏷️ Market</span>'}</div></div>`;
+}
+function saddleRow(h){
+  if (isFoal(h)) return `<div class="row"><span class="lbl">Saddle</span><span style="color:var(--muted)">Too young for a saddle</span></div>`;
+  const cur = state.saddles.find(s => s.id === h.saddle);
+  const used = new Set(state.horses.map(x => x.saddle));
+  const freeTypes = [...new Set(state.saddles.filter(s => !used.has(s.id)).map(s => s.type))];
+  const btns = [];
+  if (cur) btns.push(`<button class="on" data-act="equip" data-id="${h.id}" data-arg="none" title="Take off">${saddleImg(cur.type,1)} ✕</button>`);
+  for (const t of freeTypes) btns.push(`<button data-act="equip" data-id="${h.id}" data-arg="${t}" title="${SADDLES[t].name}">${saddleImg(t,1)}</button>`);
+  return `<div class="row"><span class="lbl">Saddle</span><div class="saddles">${btns.join('') || '<span style="color:var(--muted)">Buy saddles at the 🏷️ Market</span>'}</div></div>`;
+}
+function stableView(){
+  if (!state.horses.length) return sceneHTML() + `<div class="panel empty">Your stable is empty! Visit the 🏷️ Market to buy a horse.</div>`;
+  return sceneHTML() + `<h2 class="pix">All your horses</h2><div class="grid">${state.horses.map(hcardHTML).join('')}</div>`;
+}
+function hcardHTML(h){
+    const ph = phen(h.genes), foal = isFoal(h);
+    return `<div class="hcard">
+      <div class="pasture">
+        ${foal ? '<span class="badge">🍼 Foal</span>' : ''}
+        ${h.preg ? '<span class="badge r">🤰 Expecting</span>' : ''}
+        ${horseImg(look(h), 5, h.happy >= 50 ? 'bob' : '')}
+      </div>
+      <div class="hbody">
+        <div class="hname pix" data-act="rename" data-id="${h.id}" title="Click to rename">${esc(h.name)} <span class="sex ${h.sex}">${h.sex==='F'?'♀':'♂'}</span> <small>✏️</small></div>
+        <div class="hcolor">${fullName(ph)} ${sexWord(h)} · worth ${value(h)} 🪙</div>
+        <div class="row"><span class="lbl">Food</span>${bar(h.hunger,'hunger',h.id)}</div>
+        <div class="row"><span class="lbl">Happiness</span>${bar(h.happy,'happy',h.id)}</div>
+        <div class="row"><span class="lbl">Mood</span><b data-live="mood" data-id="${h.id}">${mood(h)}</b></div>
+        <div class="row"><span class="lbl">Speed</span>${statBar(h.speed)}<b>${h.speed}</b></div>
+        <div class="row"><span class="lbl">Stamina</span>${statBar(h.stamina)}<b>${h.stamina}</b></div>
+        <div class="row"><span class="lbl">Gentle</span>${statBar(h.temper)}<b>${h.temper}</b></div>
+        ${saddleRow(h)}
+        ${rugRow(h)}
+        ${h.tested ? genesHTML(h) : ''}
+        <div class="status" data-live="status" data-id="${h.id}">${status(h)}</div>
+        <div class="btns">
+          <button data-act="feed" data-id="${h.id}" data-arg="hay">🌿 Hay</button>
+          <button data-act="feed" data-id="${h.id}" data-arg="oats">🌾 Oats</button>
+          <button data-act="feed" data-id="${h.id}" data-arg="carrot">🥕 Carrot</button>
+          <button data-act="brush" data-id="${h.id}">✨ Brush</button>
+          ${!h.out && state.player.leading !== h.id && isDaytime() ? `<button class="primary" data-act="lead" data-id="${h.id}">🌳 Lead to paddock</button>` : ''}
+          ${h.tested ? '' : `<button data-act="dna" data-id="${h.id}">🧬 DNA test (${state.dnaFree ? 'free' : DNA_COST + '🪙'})</button>`}
+          <button class="danger" data-act="sell" data-id="${h.id}">Sell ${value(h)}🪙</button>
+        </div>
+      </div></div>`;
+}
+let openHorse = null;
+function horseModalHTML(h){
+  return `<button class="closex" data-act="closeModal">✕</button>${hcardHTML(h)}`;
+}
+function horseModal(id){
+  const h = byId(id); if (!h) return;
+  showModal(horseModalHTML(h), () => { openHorse = id; $('#mbox').classList.add('wide'); });
+}
+
+function farmView(){
+  const ready = state.plots.filter(p => p.crop && now() - p.at >= CROPS[p.crop].time*1000).length;
+  const growing = state.plots.filter(p => p.crop).length - ready;
+  return `<div class="panel roompanel"><div><h2>🌱 Your fields</h2>
+      <p>Your fields are outside! Go to the 🏡 Farm tab and walk out the barn door to plant and harvest.
+      You have <b>${state.plots.length}</b> field${state.plots.length>1?'s':''}: <b>${ready}</b> ready to harvest, <b>${growing}</b> growing.</p></div>
+      <button class="primary" data-act="goFields" style="font-size:16px;padding:10px 16px">🚪 Go to the fields</button></div>
+    <div class="panel"><h2>🧺 Storage</h2><p>Your food storage. Horses eat 🌿 hay, 🌾 oats and 🥕 carrots. Sell what you don't need.</p><div class="inv">
+      ${Object.entries(CROPS).map(([k,c]) => `<div class="invi">${cropImg(k,40)}<span class="n">${state.inv[k]}</span>
+        <button data-act="sellCrop" data-arg="${k}:1" ${state.inv[k]<1?'disabled':''}>Sell 1 (${c.sell}🪙)</button>
+        <button data-act="sellCrop" data-arg="${k}:all" ${state.inv[k]<1?'disabled':''}>All</button></div>`).join('')}
+    </div></div>
+    <div class="panel"><h2>Upgrades</h2><div class="ups">
+      ${state.plots.length < 12 ? `<button class="primary" data-act="buyPlot">➕ New field (${plotCost()}🪙)</button>` : '<span>All fields bought!</span>'}
+      ${state.cap < 16 ? `<button class="primary" data-act="upgradeStable">🏠 +2 stable stalls (${stableCost()}🪙)</button>` : '<span>Stable is max size!</span>'}
+    </div></div>`;
+}
+
+function miniCard(h, selected){
+  const r = readiness(h);
+  return `<div class="mcard ${selected?'sel':''}" data-act="select" data-id="${h.id}">
+    ${horseImg(look(h), 3)}<span class="nm">${esc(h.name)}</span>
+    <span style="font-size:12px;color:var(--muted)">${fullName(phen(h.genes))}</span>
+    <span class="rd ${r?'':'ok'}" data-live="ready" data-id="${h.id}">${r || 'Ready ✓'}</span></div>`;
+}
+function breedView(){
+  const mares = state.horses.filter(h => h.sex==='F'), studs = state.horses.filter(h => h.sex==='M');
+  const m = byId(state.sel.F), s = byId(state.sel.M);
+  const slot = (h, label) => h ? `<div class="slot full">${horseImg(look(h),4)}<b>${esc(h.name)}</b><small>${fullName(phen(h.genes))}</small></div>`
+                                : `<div class="slot">${label}</div>`;
+  let oddsHTML = '';
+  if (m && s){
+    if (m.tested && s.tested){
+      oddsHTML = `<h3 class="center">Possible foals</h3><div class="odds">${odds(m, s).map(([n, o]) => {
+        const isNew = !state.found[o.ph.color] || (o.ph.pinto && !state.found.Pinto) || (o.ph.appy && !state.found.Appaloosa);
+        const pc = o.p*100;
+        return `<div class="odd">${horseImg({...o.ph, face:'none', socks:0, seed:3}, 1.25)} ${n} ${isNew?'<span class="new">NEW!</span>':''}<span class="p">${pc<1?'<1':Math.round(pc)}%</span></div>`;
+      }).join('')}</div>`;
+    } else {
+      const need = [m, s].filter(h => !h.tested);
+      oddsHTML = `<p class="center">🧬 DNA-test both parents to see which colors their foal could be!</p>
+        <p class="center">${need.map(h => `<button data-act="dna" data-id="${h.id}">Test ${esc(h.name)} (${state.dnaFree ? 'free' : DNA_COST + '🪙'})</button>`).join(' ')}</p>`;
+    }
+  }
+  return `<div class="panel"><h2>Breeding barn</h2>
+      <p>Pick one mare and one stallion. They must be grown up, fed and happy. The foal gets one copy of each gene from each parent, and its stats can turn out better than its parents' stats!</p>
+      <div class="pair">${slot(m,'Pick a mare ♀ below')}<span class="heart">💞</span>${slot(s,'Pick a stallion ♂ below')}</div>
+      ${oddsHTML}
+      <p class="center"><button class="primary" data-act="breed" ${m&&s?'':'disabled'}>Breed! (${BREED_COST}🪙)</button></p>
+    </div>
+    <h3>Mares ♀</h3>${mares.length ? `<div class="mini">${mares.map(h => miniCard(h, h.id===state.sel.F)).join('')}</div>` : '<p class="empty">No mares yet.</p>'}
+    <h3>Stallions ♂</h3>${studs.length ? `<div class="mini">${studs.map(h => miniCard(h, h.id===state.sel.M)).join('')}</div>` : '<p class="empty">No stallions yet.</p>'}`;
+}
+
+function bundleContents(b){
+  const parts = [];
+  for (const [k, n] of Object.entries(b.items || {})) parts.push(`<span class="bpart">${cropImg(k, 24)}×${n}</span>`);
+  for (const d of b.decor || []) parts.push(`<span class="bpart">${itemImg(d, 2)}</span>`);
+  if (b.saddle) parts.push(`<span class="bpart">${saddleImg(b.saddle, 2)}</span>`);
+  if (b.dna) parts.push(`<span class="bpart">🧬×${b.dna}</span>`);
+  for (const [k, c] of b.rugs || []) parts.push(`<span class="bpart">${RUG_KINDS[k].icon}${rugSwatch(k, c)}</span>`);
+  if (b.stalls) parts.push(`<span class="bpart">🏠 +${b.stalls} stalls</span>`);
+  return parts.join('');
+}
+function roomPanel(){
+  const full = state.horses.length >= state.cap;
+  return `<div class="panel roompanel ${full ? 'full' : ''}">
+    <div><h2>🏠 More room for horses</h2>
+    <p>Your stable has <b>${state.horses.length} horse${state.horses.length===1?'':'s'}</b> in <b>${state.cap} stalls</b>.
+    ${full ? '<b>It\'s full!</b> Build more stalls so you can keep everyone, buy new horses and welcome foals.' : 'Build more stalls so you never have to sell a horse you love.'}</p></div>
+    ${state.cap < 16 ? `<button class="primary" data-act="upgradeStable" style="font-size:16px;padding:10px 16px">Build 2 more stalls (${stableCost()}🪙)</button>`
+                     : '<b>Your stable is the biggest it can be! (16 stalls)</b>'}
+  </div>`;
+}
+function handPanel(){
+  return `<div class="panel roompanel"><div><h2>👩‍🌾 Stable hand</h2>
+    <p>${state.stableHand ? 'Your stable hand takes every horse out to the paddock each morning. Thank you, helper!'
+      : 'Lots of horses? Hire a stable hand who takes all your horses to the paddock every morning, so nobody gets sad.'}</p></div>
+    ${state.stableHand ? '<b>✅ Hired</b>' : `<button class="gold" data-act="buyHand" style="font-size:16px;padding:10px 16px">Hire for ${HAND_COST}🪙</button>`}</div>`;
+}
+function marketView(){
+  return roomPanel() + handPanel() + `<div class="panel"><h2>Horse market</h2>
+    <p>New horses arrive in <b data-live="market">${fmt((state.marketAt-now())/1000)}</b>. Their genes are a mystery until you DNA-test them!</p>
+    <p><button data-act="refresh">🔄 New horses now (${REFRESH_COST}🪙)</button></p></div>
+    <div class="grid">${state.market.map((h, i) => {
+      const ph = phen(h.genes);
+      const isNew = !state.found[ph.color] || (ph.pinto && !state.found.Pinto) || (ph.appy && !state.found.Appaloosa);
+      return `<div class="hcard"><div class="pasture">${isNew?'<span class="badge">📖 New color!</span>':''}${horseImg(look(h),5,'bob')}</div>
+        <div class="hbody">
+          <div class="hname pix">${esc(h.name)} <span class="sex ${h.sex}">${h.sex==='F'?'♀':'♂'}</span></div>
+          <div class="hcolor">${fullName(ph)} ${sexWord(h)}</div>
+          <div class="row"><span class="lbl">Speed</span>${statBar(h.speed)}<b>${h.speed}</b></div>
+          <div class="row"><span class="lbl">Stamina</span>${statBar(h.stamina)}<b>${h.stamina}</b></div>
+          <div class="row"><span class="lbl">Gentle</span>${statBar(h.temper)}<b>${h.temper}</b></div>
+          <div class="btns"><button class="gold" data-act="buy" data-id="${i}">Buy for ${marketPrice(h)}🪙</button></div>
+        </div></div>`;
+    }).join('') || '<div class="panel empty">Sold out! New horses are coming soon.</div>'}</div>
+    <div class="panel" style="margin-top:16px"><h2>🎁 Bundles</h2>
+      <p>Get several things together for a lower price!${state.dnaFree ? ` You have <b>${state.dnaFree} free DNA test${state.dnaFree>1?'s':''}</b>.` : ''}</p></div>
+    <div class="shop bundles">${BUNDLES.map(b => {
+      if (b.stalls && state.cap + b.stalls > 16) return '';
+      const worth = bundleWorth(b), price = bundlePrice(b);
+      return `<div class="sitem bundle"><span class="save">Save ${worth - price}🪙</span>
+        <span class="sn">${b.name}</span><div class="bparts">${bundleContents(b)}</div>
+        <span class="sd">${b.desc}</span>
+        <span class="was">Worth ${worth}🪙</span>
+        <button class="gold" data-act="buyBundle" data-arg="${b.id}">Buy ${price}🪙</button></div>`;
+    }).join('')}</div>
+    <div class="panel" style="margin-top:16px"><h2>🛒 Stable shop</h2>
+      <p>Decorations go into your stable aisle. Walk up to one and press <kbd>E</kbd> to pick it up and move it.
+      Every decoration makes your horses' happiness drop a little slower! (Now: <b>${Math.round(decorBonus()*100)}% slower</b>)</p></div>
+    <div class="shop">${Object.entries(SHOP).map(([k, it]) => {
+      const n = state.decor.filter(d => d.type === k).length + (state.player.carry && state.player.carry.type === k ? 1 : 0);
+      return `<div class="sitem"><div class="sicon">${itemImg(k, 4)}</div><span class="sn">${it.name}</span><span class="sd">${it.desc}</span>
+        ${n ? `<span class="own">You have ${n}</span>` : ''}
+        <button class="gold" data-act="buyItem" data-arg="${k}">Buy ${it.price}🪙</button></div>`;
+    }).join('')}</div>
+    <div class="panel" style="margin-top:16px"><h2>🧥 Horse rugs</h2>
+      <p>Horses in the paddock need the right rug for the weather: ☀️ sunny → 🪰 fly sheet, 🌧️ rain → ☔ rain sheet, ❄️ snow → 🧣 fleece rug.
+      Today it's <b>${WEATHER[state.weather||'sunny'].icon} ${WEATHER[state.weather||'sunny'].name.toLowerCase()}</b>.</p></div>
+    <div class="shop">${Object.entries(RUG_COLORS).flatMap(([kind, cols]) => Object.entries(cols).map(([color, c]) => {
+      const n = state.rugs.filter(r => r.kind === kind && r.color === color).length;
+      return `<div class="sitem"><span class="sn">${RUG_KINDS[kind].icon} ${c.name} ${RUG_KINDS[kind].name.toLowerCase()}</span>
+        ${horseImg({color:'Bay', face:'blaze', socks:1, seed:4, rug:{kind, color}}, 3)}
+        <span class="sd">${RUG_KINDS[kind].desc}</span>
+        ${n ? `<span class="own">You have ${n}</span>` : ''}
+        <button class="gold" data-act="buyRug" data-arg="${kind}:${color}">Buy ${RUG_KINDS[kind].price}🪙</button></div>`;
+    })).join('')}</div>
+    <div class="panel" style="margin-top:16px"><h2>🐎 Tack shop: saddles</h2>
+      <p>Saddles hang on your stable wall. Put one on a grown-up horse from its card in the Stable, or walk up to its stall and press <kbd>E</kbd>.</p></div>
+    <div class="shop">${Object.entries(SADDLES).map(([k, s]) => {
+      const n = state.saddles.filter(x => x.type === k).length;
+      return `<div class="sitem"><div class="sicon">${saddleImg(k, 4)}</div><span class="sn">${s.name}</span>
+        ${horseImg({color:'Chestnut', face:'none', socks:0, seed:3, saddle:k}, 2)}
+        ${n ? `<span class="own">You have ${n}</span>` : ''}
+        <button class="gold" data-act="buySaddle" data-arg="${k}">Buy ${s.price}🪙</button></div>`;
+    }).join('')}</div>`;
+}
+
+function bookView(){
+  const found = BOOK.filter(([k]) => state.found[k]).length;
+  return `<div class="panel"><h2>Horse Book</h2><p>Collect every coat color and pattern! Each new discovery gives you 50 🪙.</p>
+    <div class="prog"><i style="width:${found/BOOK.length*100}%"></i></div><b>${found} / ${BOOK.length} found</b>
+    ${found === BOOK.length ? '<p>🏆 <b>You found every horse! You are a master breeder!</b></p>' : ''}</div>
+    <div class="book">${BOOK.map(([k, hint]) => {
+      const got = state.found[k];
+      const lk = k === 'Pinto' ? {color:'Bay', pinto:true} : k === 'Appaloosa' ? {color:'Chestnut', appy:true} : {color:k};
+      return `<div class="bent ${got?'':'lock'}">${horseImg({...lk, face:'none', socks:0, seed:11, sil:!got}, 4)}
+        <span class="bn pix">${got ? k : '???'}</span><span class="bh">${hint}</span></div>`;
+    }).join('')}</div>`;
+}
+
+const VIEWS = {stable:stableView, farm:farmView, breed:breedView, ride:() => rideView(), market:marketView, book:bookView};
+function render(){
+  $('#hud').innerHTML = hud();
+  $('#tabs').innerHTML = tabsHTML();
+  $('#view').innerHTML = VIEWS[state.tab]();
+  if (openHorse !== null){
+    const h = byId(openHorse);
+    if (h) $('#mbox').innerHTML = horseModalHTML(h); else closeModal();
+  }
+}
+function updateLive(){
+  const t = now();
+  $('#hud').innerHTML = hud();
+  document.querySelectorAll('[data-live]').forEach(el => {
+    const k = el.dataset.live, id = +el.dataset.id;
+    if (k === 'hunger' || k === 'happy'){
+      const h = byId(id); if (!h) return; const v = h[k];
+      el.style.width = v + '%'; el.className = v < 25 ? 'low' : v < 50 ? 'mid' : '';
+    } else if (k === 'mood'){ const h = byId(id); if (h) el.textContent = mood(h); }
+    else if (k === 'status'){ const h = byId(id); if (h) el.textContent = status(h); }
+    else if (k === 'ready'){ const h = byId(id); if (!h) return; const r = readiness(h); el.textContent = r || 'Ready ✓'; el.classList.toggle('ok', !r); }
+    else if (k === 'plot' || k === 'plottime'){
+      const p = state.plots[id]; if (!p || !p.crop) return; const c = CROPS[p.crop];
+      if (k === 'plot') el.style.width = clamp((t-p.at)/(c.time*1000),0,1)*100 + '%';
+      else el.textContent = fmt(c.time - (t-p.at)/1000);
+    } else if (k === 'market') el.textContent = fmt((state.marketAt - t)/1000);
+  });
+}
+
+/* ---------- actions ---------- */
+function spend(n){
+  if (state.coins < n){ toast(`Not enough coins! You need ${n} 🪙.`); return false; }
+  state.coins -= n; return true;
+}
+const ACT = {
+  tab(_, arg){ if (ride && arg !== 'ride') endRide(); state.tab = arg; render(); scrollTo(0,0); },
+  startRide(){ startRide(); },
+  jump(){ rideJump(); },
+  rideSel(id){ state.rideSel = id; render(); },
+  plant(i, crop, el){
+    const c = CROPS[crop]; if (!spend(c.seed)) return;
+    state.plots[i] = {crop, at: now()}; pop('🌱', el); render();
+  },
+  harvest(i, _, el){
+    const p = state.plots[i]; if (!p.crop || now()-p.at < CROPS[p.crop].time*1000) return;
+    state.inv[p.crop] += CROPS[p.crop].yield; pop('+' + CROPS[p.crop].yield, el);
+    state.plots[i] = {crop:null, at:0}; render();
+  },
+  harvestAll(){
+    let n = 0;
+    state.plots.forEach((p, i) => { if (p.crop && now()-p.at >= CROPS[p.crop].time*1000){ state.inv[p.crop] += CROPS[p.crop].yield; state.plots[i] = {crop:null,at:0}; n++; } });
+    if (n) toast(`Harvested ${n} field${n>1?'s':''}!`, 'good'); render();
+  },
+  sellCrop(_, arg, el){
+    const [k, amt] = arg.split(':'); const n = amt === 'all' ? state.inv[k] : Math.min(1, state.inv[k]);
+    if (!n) return; state.inv[k] -= n; state.coins += n * CROPS[k].sell; pop('+' + n*CROPS[k].sell + '🪙', el); render();
+  },
+  buyPlot(){ if (state.plots.length < 12 && spend(plotCost())){ state.plots.push({crop:null,at:0}); toast('New field ready to plant!','good'); render(); } },
+  buyPlotHere(){ closeModal(); ACT.buyPlot(); },
+  seed(_, k){ state.seed = k; render(); },
+  goFields(){ state.tab = 'stable'; if (curMap() !== 'farm') goTo('farm'); else render(); scrollTo(0,0); },
+  upgradeStable(){ if (spend(stableCost())){ state.cap += 2; toast('Your stable is bigger now! 🏠','good'); render(); } },
+  feed(id, food, el){
+    const h = byId(id), f = FOOD[food];
+    if (state.inv[food] < 1){ toast(`No ${CROPS[food].name.toLowerCase()} left! Plant some in your fields outside the barn.`); return; }
+    if (f.hunger > 10 && h.hunger >= 97){ toast(`${h.name} is full! Try a carrot or brushing instead.`); return; }
+    state.inv[food]--; h.hunger = clamp(h.hunger + f.hunger, 0, 100); h.happy = clamp(h.happy + f.happy, 0, 100);
+    pop(food === 'carrot' ? '🥕' : '😋', el); render();
+  },
+  brush(id, _, el){
+    const h = byId(id), left = (h.brushAt - now())/1000;
+    if (left > 0){ toast(`${h.name} is already shiny! Brush again in ${fmt(left)}.`); return; }
+    h.happy = clamp(h.happy + 12, 0, 100); h.brushAt = now() + T.brush*1000; pop('✨', el); render();
+  },
+  dna(id){
+    const h = byId(id); if (h.tested) return;
+    if (state.dnaFree > 0) state.dnaFree--; else if (!spend(DNA_COST)) return;
+    h.tested = true; toast(`🧬 ${h.name}'s genes are revealed!`, 'good'); render();
+  },
+  sell(id){
+    const h = byId(id);
+    if (h.preg){ toast(`${h.name} is expecting a foal. Wait until it's born!`); return; }
+    if (openHorse !== null) closeModal();
+    showModal(`<div class="mpic">${horseImg(look(h), 5)}</div>
+      <h2>Sell ${esc(h.name)}?</h2><p>You'll get <b>${value(h)} 🪙</b>. This can't be undone.${saddleOf(h) ? ' The saddle goes back on your wall.' : ''}</p>
+      <p><button data-act="closeModal">Keep ${esc(h.name)}</button> <button class="danger" data-act="sellYes" data-id="${h.id}">Yes, sell</button></p>`);
+  },
+  sellYes(id){
+    const h = byId(id); closeModal(); if (!h) return;
+    if (state.player.leading === id) state.player.leading = null;
+    state.coins += value(h); state.horses = state.horses.filter(x => x !== h);
+    if (state.sel.F === id) state.sel.F = null; if (state.sel.M === id) state.sel.M = null;
+    toast(`Sold ${h.name} for ${value(h)} 🪙. Goodbye, ${h.name}! 👋`); render();
+  },
+  buyItem(_, type){
+    const spot = freeSpot();
+    if (!spot){ toast('Your stable aisle is full! Sell... just kidding, move things around to make room.'); return; }
+    if (!spend(SHOP[type].price)) return;
+    state.decor.push({id: Date.now(), type, x: spot[0], y: spot[1]});
+    if (type === 'hayBale'){ state.inv.hay += 10; toast('Hay bale delivered to your stable! +10 🌿 hay', 'good'); }
+    else toast(`${SHOP[type].name} delivered to your stable! 🏠`, 'good');
+    render();
+  },
+  buyBundle(_, bid){
+    const b = BUNDLES.find(x => x.id === bid); if (!b) return;
+    if (b.stalls && state.cap + b.stalls > 16) return toast('Your stable is already the biggest it can be!');
+    // make sure every decoration has a spot before taking any coins
+    const spots = [];
+    for (const d of b.decor || []){
+      const s = freeSpot(); if (!s){ spots.forEach(() => state.decor.pop()); return toast('Not enough room in your stable aisle for the decorations. Move some things around first!'); }
+      const tmp = {id: Date.now() + spots.length, type: d, x: s[0], y: s[1]}; state.decor.push(tmp); spots.push(tmp);
+    }
+    if (!spend(bundlePrice(b))){ spots.forEach(() => state.decor.pop()); return; }
+    for (const [k, n] of Object.entries(b.items || {})) state.inv[k] += n;
+    if (spots.some(d => d.type === 'hayBale')) state.inv.hay += 10 * spots.filter(d => d.type === 'hayBale').length;
+    if (b.saddle) state.saddles.push({id: Date.now(), type: b.saddle});
+    (b.rugs || []).forEach(([kind, color], i) => state.rugs.push({id: Date.now() + 10 + i, kind, color}));
+    if (b.dna) state.dnaFree = (state.dnaFree || 0) + b.dna;
+    if (b.stalls) state.cap += b.stalls;
+    toast(`🎁 ${b.name} unpacked! Enjoy!`, 'good'); render();
+  },
+  buySaddle(_, type){
+    if (!spend(SADDLES[type].price)) return;
+    state.saddles.push({id: Date.now(), type});
+    toast(`New ${SADDLES[type].name} saddle! It's hanging on your stable wall.`, 'good'); render();
+  },
+  rug(id, arg, el){
+    const h = byId(id); if (!h) return;
+    if (arg === 'none'){ h.rug = null; render(); return; }
+    const [kind, color] = arg.split(':');
+    const used = new Set(state.horses.map(x => x.rug));
+    const r = state.rugs.find(r => r.kind === kind && r.color === color && !used.has(r.id));
+    if (!r) return;
+    h.rug = r.id; pop(RUG_KINDS[kind].icon, el);
+    if (h.out && rugOK(h)) toast(`${h.name} is cozy now! 🥰`, 'good');
+    render();
+  },
+  buyRug(_, arg){
+    const [kind, color] = arg.split(':');
+    if (!spend(RUG_KINDS[kind].price)) return;
+    state.rugs.push({id: Date.now(), kind, color});
+    toast(`New ${RUG_COLORS[kind][color].name.toLowerCase()} ${RUG_KINDS[kind].name.toLowerCase()}! Put it on a horse from its card.`, 'good'); render();
+  },
+  equip(id, type, el){
+    const h = byId(id); if (!h || isFoal(h)) return;
+    if (type === 'none'){ h.saddle = null; render(); return; }
+    const used = new Set(state.horses.map(x => x.saddle));
+    const s = state.saddles.find(s => s.type === type && !used.has(s.id));
+    if (!s) return;
+    h.saddle = s.id; h.happy = clamp(h.happy + 5, 0, 100); pop('🐎', el);
+    render();
+  },
+  interact(){ interact(); },
+  lead(id){
+    const h = byId(id), P = state.player; if (!h) return;
+    if (!isDaytime()) return toast('🌙 It\'s night. The horses are sleeping!');
+    if (P.carry) return toast('Put down what you are carrying first.');
+    if (P.leading && P.leading !== id){ const o = byId(P.leading); if (o) o.out = false; }
+    h.out = false; P.leading = id;
+    if (openHorse !== null) closeModal();
+    if (state.tab !== 'stable'){ state.tab = 'stable'; scrollTo(0,0); }
+    resetLeadPos();
+    toast(`🐴 ${h.name} is following you. Walk out of the barn, past the fields, to the paddock on the right!`, 'good');
+    render();
+  },
+  buyHand(){
+    if (state.stableHand) return;
+    if (!spend(HAND_COST)) return;
+    state.stableHand = true;
+    toast('👩‍🌾 You hired a stable hand! Every morning they will take your horses out to the paddock.', 'good');
+    if (clock().hour < NIGHT){ turnOutAll(); }
+    render();
+  },
+  rename(id){ const h = byId(id); if (openHorse !== null) closeModal(); nameModal(h, 'Rename horse', `Give ${esc(h.name)} a new name:`); },
+  saveName(id){
+    const h = byId(id), v = $('#nameIn').value.trim();
+    if (h && v) h.name = v.slice(0,16);
+    closeModal(); render();
+  },
+  closeModal(){ closeModal(); },
+  select(id){
+    const h = byId(id); const k = h.sex;
+    state.sel[k] = state.sel[k] === id ? null : id; render();
+  },
+  breed(){
+    const m = byId(state.sel.F), s = byId(state.sel.M);
+    if (!m || !s) return;
+    for (const h of [m, s]){ const r = readiness(h); if (r){ toast(`${h.name}: ${r}`); return; } }
+    if (!spend(BREED_COST)) return;
+    const stat = (a, b) => clamp(Math.round((a+b)/2 + randi(-6, 10)), 1, 100);
+    m.preg = {due: now() + T.pregnancy*1000, sire: s.name, warned:false, foal: {
+      genes: inherit(m, s), sex: pick(['F','M']),
+      speed: stat(m.speed, s.speed), stamina: stat(m.stamina, s.stamina), temper: stat(m.temper, s.temper),
+      face: pick([m.face, s.face, pick(['none','star','blaze'])]),
+      socks: clamp(pick([m.socks, s.socks]) + randi(-1,1), 0, 4),
+    }};
+    s.restUntil = now() + T.rest*1000;
+    state.sel = {F:null, M:null};
+    toast(`💞 ${m.name} is expecting a foal! It will be born in ${T.pregnancy} seconds.`, 'good'); render();
+  },
+  buy(i){
+    const h = state.market[i]; if (!h) return;
+    if (state.horses.length >= state.cap){ toast('Your stable is full! Build more stalls at the top of the 🏷️ Market.'); return; }
+    if (!spend(marketPrice(h))) return;
+    state.market.splice(i, 1); state.horses.push(h); discover(h);
+    toast(`Welcome home, ${h.name}! 🐴`, 'good'); render();
+  },
+  refresh(){ if (spend(REFRESH_COST)){ refreshMarket(); render(); } },
+  start(){ state.intro = false; closeModal(); },
+  reset(){
+    if (openHorse !== null) closeModal();
+    showModal(`<h2>Start over?</h2><p>All your horses, coins and progress will be lost. This can't be undone.</p>
+      <p><button data-act="closeModal">Keep playing</button> <button class="danger" data-act="resetYes">Yes, start over</button></p>`);
+  },
+  resetYes(){
+    closeModal(); ride = null;
+    try { localStorage.removeItem(SAVE_KEY); } catch(e){}
+    newGame(); state.intro = false; render(); toast('A fresh start at Clover Hill! 🍀');
+  },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const fn = ACT[b.dataset.act]; if (!fn) return;
+  const id = b.dataset.id !== undefined ? +b.dataset.id : undefined;
+  fn(id, b.dataset.arg, b); save();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'nameIn') ACT.saveName(+e.target.dataset.id);
+});
+
+/* =========================================================
+   THE WORLD — two maps you can walk between (16 x 11 tiles, 16px each)
+
+   BARN (inside):                    FARM (outside):
+     rows 0-1  back wall               barn building top-left (door at the bottom)
+     rows 2-3  top stalls              fenced field with 12 plots in the middle
+     rows 4-7  aisle (door on the      pond, trees and a scarecrow around it
+               left, rows 5-6)
+     rows 8-9  bottom stalls
+     row 10    front wall
+   ========================================================= */
+const TILE = 16, COLS = 16, ROWS = 11, AISLE_TOP = 4, AISLE_BOT = 7;
+const DIRS = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
+const WINDOWS = [3, 8, 12];
+const HOOKS = [0,1,2,4,5,6,7,9,10,11,13,14,15];
+const BARN_DOOR_ROWS = [5, 6];                 // inside: walk out to the left here
+const FARM_DOOR_X = [1, 2, 3], FARM_DOOR_Y = 4; // outside: the big barn door
+const PLOT_X0 = 7, PLOT_Y0 = 3, PLOT_W = 4;    // 4 x 3 field tiles
+const FENCE = {x0:6, y0:2, x1:11, y1:6};
+const GATE = [[8,6],[9,6]];
+const POND = [[1,8],[2,8],[3,8],[1,9],[2,9],[3,9]];
+const TREES = [[14,1],[15,4],[14,9],[6,10],[11,10]];
+const SCARECROW = [12, 4];
+const PATH = [[2,5],[2,6],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[12,7],[13,7],[14,7],[15,7]];
+const FARM_EXIT_ROWS = [6, 7, 8];   // walk off the right edge here to reach the paddock
+const pl = {px:2, py:5, moving:false, fx:0, fy:0, tx:0, ty:0, t:0, path:[], after:null, walkT:0, fade:0, fx2:[]};
+const held = [];   // directions being held down, newest last
+let lastHint = '';
+const has2 = (list, x, y) => list.some(([a,b]) => a === x && b === y);
+const curMap = () => state.player.map || 'barn';
+
+/* ----- barn rules ----- */
+function stallAt(x, y){
+  if (x < 0 || x >= COLS) return -1;
+  if (y === 2 || y === 3) return Math.floor(x/2);
+  if (y === 8 || y === 9) return 8 + Math.floor(x/2);
+  return -1;
+}
+const decorAt = (x, y) => state.decor.find(d => d.x === x && d.y === y);
+const inAisle = (x, y) => x >= 0 && x < COLS && y >= AISLE_TOP && y <= AISLE_BOT;
+const isBarnDoorTile = (x, y) => x === 0 && BARN_DOOR_ROWS.includes(y);
+const barnWalk = (x, y) => inAisle(x, y) && !decorAt(x, y);
+
+/* ----- farm rules ----- */
+function plotAt(x, y){
+  if (x < PLOT_X0 || x >= PLOT_X0 + PLOT_W || y < PLOT_Y0 || y >= PLOT_Y0 + 3) return -1;
+  return (y - PLOT_Y0) * PLOT_W + (x - PLOT_X0);
+}
+const plotPos = i => [PLOT_X0 + i % PLOT_W, PLOT_Y0 + Math.floor(i / PLOT_W)];
+const isFarmDoor = (x, y) => y === FARM_DOOR_Y && FARM_DOOR_X.includes(x);
+function isFence(x, y){
+  if (has2(GATE, x, y)) return false;
+  const onH = (y === FENCE.y0 || y === FENCE.y1) && x >= FENCE.x0 && x <= FENCE.x1;
+  const onV = (x === FENCE.x0 || x === FENCE.x1) && y >= FENCE.y0 && y <= FENCE.y1;
+  return onH || onV;
+}
+function farmWalk(x, y){
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  if (x <= 4 && y <= 4) return false;           // the barn building
+  if (has2(POND, x, y) || has2(TREES, x, y)) return false;
+  if (x === SCARECROW[0] && y === SCARECROW[1]) return false;
+  return !isFence(x, y);
+}
+/* ----- paddock rules ----- */
+const PADDOCK = {x0:3, y0:1, x1:15, y1:10};
+const PADDOCK_GATE = [[3,6],[3,7]];
+const PADDOCK_ENTRY_ROWS = [6, 7, 8];       // walk off the left edge here to go back to the fields
+const PADDOCK_TREES = [[1,2],[0,10],[1,4]];
+const TROUGH = [[13,2],[14,2]];
+const inPaddock = (x, y) => x > PADDOCK.x0 && x < PADDOCK.x1 && y > PADDOCK.y0 && y < PADDOCK.y1;
+function isPaddockFence(x, y){
+  if (has2(PADDOCK_GATE, x, y)) return false;
+  const onH = (y === PADDOCK.y0 || y === PADDOCK.y1) && x >= PADDOCK.x0 && x <= PADDOCK.x1;
+  const onV = (x === PADDOCK.x0 || x === PADDOCK.x1) && y >= PADDOCK.y0 && y <= PADDOCK.y1;
+  return onH || onV;
+}
+function paddockWalk(x, y){
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  if (has2(PADDOCK_TREES, x, y) || has2(TROUGH, x, y)) return false;
+  return !isPaddockFence(x, y);
+}
+const walkable = (x, y, map = curMap()) => map === 'barn' ? barnWalk(x, y) : map === 'farm' ? farmWalk(x, y) : paddockWalk(x, y);
+
+/* ----- horses wandering in the paddock (positions are not saved) ----- */
+const pdk = {};
+function placeInPaddock(h, x, y){
+  const rx = x ?? 5 + Math.random()*8, ry = y ?? 3 + Math.random()*6;
+  pdk[h.id] = {x: rx, y: ry, tx: rx, ty: ry, wait: 1 + Math.random()*3, flip: Math.random() < .5, moving: false};
+}
+function updatePaddock(dt){
+  for (const h of state.horses){
+    if (!h.out) continue;
+    const p = pdk[h.id] || (placeInPaddock(h), pdk[h.id]);
+    if (p.wait > 0){ p.wait -= dt; p.moving = false; continue; }
+    const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
+    if (d < .05){
+      p.tx = 5 + Math.random()*8; p.ty = 3 + Math.random()*6; p.wait = 2 + Math.random()*5; p.moving = false;
+    } else {
+      const step = Math.min(d, 1.3 * dt);
+      p.x += dx/d*step; p.y += dy/d*step; p.moving = true;
+      if (Math.abs(dx) > .05) p.flip = dx < 0;
+    }
+  }
+}
+function horseNear(fx, fy){
+  let best = null, bd = 1.3;
+  for (const h of state.horses){
+    if (!h.out || !pdk[h.id]) continue;
+    const d = Math.hypot(pdk[h.id].x - fx, pdk[h.id].y - fy);
+    if (d < bd){ bd = d; best = h; }
+  }
+  return best;
+}
+/* ----- the horse you are leading follows one step behind ----- */
+const lead = {x:0, y:0, tx:0, ty:0, flip:false, moving:false};
+function resetLeadPos(){
+  const P = state.player, [dx, dy] = DIRS[P.dir];
+  const bx = P.x - dx, by = P.y - dy;
+  const ok = walkable(bx, by);
+  lead.x = lead.tx = ok ? bx : P.x; lead.y = lead.ty = ok ? by : P.y;
+}
+function updateLead(dt){
+  const dx = lead.tx - lead.x, dy = lead.ty - lead.y, d = Math.hypot(dx, dy);
+  if (d < .02){ lead.moving = false; return; }
+  const step = Math.min(d, 7 * dt);
+  lead.x += dx/d*step; lead.y += dy/d*step; lead.moving = true;
+  if (Math.abs(dx) > .02) lead.flip = dx < 0;
+}
+
+function bfs(sx, sy, isGoal, map = curMap()){
+  const prev = new Map(), key = (x,y) => x+','+y, q = [[sx,sy]];
+  prev.set(key(sx,sy), null);
+  while (q.length){
+    const [x,y] = q.shift();
+    if (isGoal(x,y)){
+      const path = []; let k = key(x,y), c = [x,y];
+      while (prev.get(k)){ path.unshift(c); c = prev.get(k); k = key(...c); }
+      return path;
+    }
+    for (const [dx,dy] of Object.values(DIRS)){
+      const nx = x+dx, ny = y+dy;
+      if (walkable(nx,ny,map) && !prev.has(key(nx,ny))){ prev.set(key(nx,ny), [x,y]); q.push([nx,ny]); }
+    }
+  }
+  return null;
+}
+// would every aisle tile in the barn still be reachable?
+function stillConnected(){
+  const P = state.player;
+  const [sx, sy] = curMap() === 'barn' ? [P.x, P.y] : [0, 5];
+  let total = 0;
+  for (let y=AISLE_TOP; y<=AISLE_BOT; y++) for (let x=0; x<COLS; x++) if (barnWalk(x,y)) total++;
+  let seen = 0; bfs(sx, sy, () => { seen++; return false; }, 'barn');
+  return seen === total;
+}
+function freeSpot(){
+  const P = state.player, inBarn = curMap() === 'barn', spots = [];
+  for (let y=AISLE_TOP; y<=AISLE_BOT; y++) for (let x=0; x<COLS; x++)
+    if (barnWalk(x,y) && !isBarnDoorTile(x,y) && x > 0 && !(inBarn && x === P.x && y === P.y)) spots.push([x,y]);
+  spots.sort(() => Math.random() - .5);
+  // prefer spots along the walls so the middle stays open
+  spots.sort((a,b) => (a[1]===AISLE_TOP||a[1]===AISLE_BOT ? 0 : 1) - (b[1]===AISLE_TOP||b[1]===AISLE_BOT ? 0 : 1));
+  for (const s of spots){
+    const tmp = {type:'tmp', x:s[0], y:s[1]}; state.decor.push(tmp);
+    const ok = stillConnected(); state.decor.pop();
+    if (ok) return s;
+  }
+  return null;
+}
+function facing(){
+  const P = state.player, [dx,dy] = DIRS[P.dir];
+  return [P.x+dx, P.y+dy];
+}
+
+/* ----- going in and out ----- */
+function goTo(map, x, y, dir){
+  const P = state.player;
+  if (P.carry && map !== 'barn') return toast(`Put the ${SHOP[P.carry.type].name.toLowerCase()} down before you go outside.`);
+  P.map = map;
+  if (map === 'farm'){ P.x = x ?? 2; P.y = y ?? 5; P.dir = dir || 'down'; }
+  else if (map === 'paddock'){ P.x = x ?? 0; P.y = y ?? 7; P.dir = dir || 'right'; }
+  else {
+    P.x = 0; P.y = 5; P.dir = 'right';
+    const d = decorAt(0, 5);
+    if (d){ const s = freeSpot(); if (s){ d.x = s[0]; d.y = s[1]; } }
+  }
+  pl.moving = false; pl.path = []; pl.after = null; pl.px = P.x; pl.py = P.y; pl.fade = 1; pl.fx2 = [];
+  if (P.leading){ lead.x = lead.tx = P.x; lead.y = lead.ty = P.y; }
+  save(); render();
+}
+// stepping off the map through a door?
+function tryDoor(nx, ny){
+  const m = curMap();
+  if (m === 'barn' && nx < 0 && BARN_DOOR_ROWS.includes(ny)){ goTo('farm'); return true; }
+  if (m === 'farm' && isFarmDoor(nx, ny)){ goTo('barn'); return true; }
+  if (m === 'farm' && nx >= COLS && FARM_EXIT_ROWS.includes(ny)){ goTo('paddock', 0, ny, 'right'); return true; }
+  if (m === 'paddock' && nx < 0 && PADDOCK_ENTRY_ROWS.includes(ny)){ goTo('farm', COLS-1, ny, 'left'); return true; }
+  return false;
+}
+
+/* ----- fields: planting and harvesting ----- */
+const cropReady = p => p.crop && now() - p.at >= CROPS[p.crop].time * 1000;
+function worldFx(text, x, y, col='#fff'){ pl.fx2.push({text, x: x*TILE + 8, y: y*TILE, t: 1, col}); }
+function plantPlot(i){
+  const seed = state.seed || 'hay', c = CROPS[seed], [x, y] = plotPos(i);
+  if (state.coins < c.seed) return toast(`Not enough coins for ${c.name.toLowerCase()} seeds (${c.seed} 🪙).`);
+  state.coins -= c.seed;
+  state.plots[i] = {crop: seed, at: now()};
+  worldFx(`-${c.seed}🪙`, x, y, '#ffe9a6');
+  $('#hud').innerHTML = hud(); save();
+}
+function harvestPlot(i){
+  const p = state.plots[i], c = CROPS[p.crop], [x, y] = plotPos(i);
+  state.inv[p.crop] += c.yield;
+  worldFx(`+${c.yield} ${c.name}`, x, y, '#d6f5b0');
+  state.plots[i] = {crop:null, at:0};
+  $('#hud').innerHTML = hud(); save();
+}
+function buyFieldModal(){
+  if (state.plots.length >= 12) return;
+  showModal(`<div class="mpic" style="padding:20px">${cropImg('sprout', 72)}</div>
+    <h2>Buy a new field?</h2><p>Dig up a new field to grow more crops for <b>${plotCost()} 🪙</b>.</p>
+    <p><button data-act="closeModal">Not now</button> <button class="primary" data-act="buyPlotHere">Yes, dig it!</button></p>`);
+}
+
+function interact(){
+  if (state.tab !== 'stable' || pl.moving) return;
+  const P = state.player, [fx, fy] = facing();
+  const led = P.leading ? byId(P.leading) : null;
+  if (curMap() === 'paddock'){
+    if (fx < 0 && PADDOCK_ENTRY_ROWS.includes(fy)) return goTo('farm', COLS-1, fy, 'left');
+    if (led){
+      if (!inPaddock(P.x, P.y)) return toast(`Walk through the gate into the paddock to let ${led.name} go.`);
+      led.out = true; P.leading = null; placeInPaddock(led, lead.x, lead.y);
+      if (!rugOK(led)){ const W = WEATHER[state.weather || 'sunny']; toast(`${W.badIcon} ${led.name} needs a ${RUG_KINDS[W.needs].name.toLowerCase()} today! Put one on from ${led.sex==='F'?'her':'his'} card, or ${led.sex==='F'?'she':'he'} will get sad.`); save(); render(); return; }
+      led.happy = clamp(led.happy + 5, 0, 100);
+      const left = state.horses.filter(h => !h.out).length;
+      toast(left ? `🌳 ${led.name} is out in the paddock! ${left} more to go.` : `🌳 ${led.name} is out! All your horses are in the paddock! 🎉`, 'good');
+      save(); render(); return;
+    }
+    const h = horseNear(fx, fy) || horseNear(P.x, P.y);
+    if (h){
+      if (!isDaytime()) return;
+      h.out = false; P.leading = h.id; resetLeadPos();
+      toast(`🐴 ${h.name} is following you. Press E in the barn to put ${h.sex==='F'?'her':'him'} back in the stall.`);
+      render(); return;
+    }
+    return toast('Walk up to a horse to lead it, or bring horses here from the barn!');
+  }
+  if (curMap() === 'farm'){
+    if (isFarmDoor(fx, fy)) return goTo('barn');
+    if (fx >= COLS && FARM_EXIT_ROWS.includes(fy)) return goTo('paddock', 0, fy, 'right');
+    const i = plotAt(fx, fy);
+    if (i >= 0){
+      if (i >= state.plots.length) return buyFieldModal();
+      const p = state.plots[i];
+      if (!p.crop) return plantPlot(i);
+      if (cropReady(p)) return harvestPlot(i);
+      return toast(`🌱 ${CROPS[p.crop].name} will be ready in ${fmt(CROPS[p.crop].time - (now()-p.at)/1000)}.`);
+    }
+    return toast('Walk up to a field and press E to plant or harvest!');
+  }
+  if (fx < 0 && BARN_DOOR_ROWS.includes(fy)) return goTo('farm');
+  if (led){
+    P.leading = null; led.out = false;
+    toast(`🐴 ${led.name} is back in ${led.sex==='F'?'her':'his'} stall.`);
+    render(); return;
+  }
+  const st = stallAt(fx, fy);
+  if (st >= 0){
+    if (st >= state.cap) return toast('🔒 This stall is locked. Build more stalls in the 🏷️ Market!');
+    const h = state.horses[st];
+    if (!h) return toast('This stall is empty. Buy a horse at the 🏷️ Market!');
+    return horseModal(h.id);
+  }
+  if (P.carry){
+    if (!barnWalk(fx, fy) || isBarnDoorTile(fx, fy)) return toast("You can't put that there.");
+    const d = {...P.carry, x:fx, y:fy};
+    state.decor.push(d);
+    if (!stillConnected()){ state.decor.pop(); return toast("That would block the way! Try another spot."); }
+    P.carry = null; save(); return;
+  }
+  const d = decorAt(fx, fy);
+  if (d){
+    state.decor = state.decor.filter(x => x !== d);
+    P.carry = {id:d.id, type:d.type}; save(); return;
+  }
+  toast('Walk up to a stall and press E to visit a horse!');
+}
+function hintText(){
+  const P = state.player, [fx, fy] = facing();
+  const led = P.leading ? byId(P.leading) : null;
+  if (curMap() === 'paddock'){
+    if (fx < 0 && PADDOCK_ENTRY_ROWS.includes(fy)) return '← Back to the fields';
+    if (led) return inPaddock(P.x, P.y) ? `Press E to let ${led.name} run free! 🌳` : `Lead ${led.name} through the gate into the paddock`;
+    const h = horseNear(fx, fy) || horseNear(P.x, P.y);
+    if (h) return isDaytime() ? `Press E to lead ${h.name}` : `${h.name} is sleepy`;
+    const inside = state.horses.filter(x => !x.out).length;
+    return inside ? `${inside} horse${inside>1?'s are':' is'} still in the barn` : '🌳 All your horses are out grazing!';
+  }
+  if (curMap() === 'farm'){
+    if (isFarmDoor(fx, fy)) return led ? `Press E to take ${led.name} back into the barn` : 'Press E to go into the barn 🐴';
+    if (fx >= COLS && FARM_EXIT_ROWS.includes(fy)) return 'Press E (or keep walking) to go to the paddock →';
+    if (led) return `${led.name} is following you. The paddock is to the right →`;
+    const i = plotAt(fx, fy);
+    if (i >= 0){
+      if (i >= state.plots.length) return `Press E to buy this field (${plotCost()}🪙)`;
+      const p = state.plots[i];
+      if (!p.crop){ const c = CROPS[state.seed || 'hay']; return `Press E to plant ${c.name.toLowerCase()} (${c.seed}🪙)`; }
+      if (cropReady(p)) return `Press E to harvest the ${CROPS[p.crop].name.toLowerCase()}! ✨`;
+      return `${CROPS[p.crop].name}: ready in ${fmt(CROPS[p.crop].time - (now()-p.at)/1000)}`;
+    }
+    const ready = state.plots.filter(cropReady).length;
+    return ready ? `🌾 ${ready} field${ready>1?'s are':' is'} ready to harvest!` : 'Walk to your fields to plant and harvest 🌱';
+  }
+  if (fx < 0 && BARN_DOOR_ROWS.includes(fy)) return led ? `Take ${led.name} outside — the paddock is past the fields` : 'Press E to go outside to the fields 🌾';
+  if (led) return `${led.name} is following you. Walk out the door on the left, or press E to put ${led.sex==='F'?'her':'him'} back`;
+  const st = stallAt(fx, fy);
+  if (st >= 0){
+    if (st >= state.cap) return '🔒 Locked stall';
+    const h = state.horses[st];
+    return h ? `Press E to visit ${h.name}` : 'An empty stall';
+  }
+  if (P.carry) return barnWalk(fx, fy) ? `Press E to put down the ${SHOP[P.carry.type].name.toLowerCase()}` : `Carrying: ${SHOP[P.carry.type].name}`;
+  const d = decorAt(fx, fy);
+  if (d) return `Press E to pick up the ${SHOP[d.type].name.toLowerCase()}`;
+  return 'Visit your horses, or walk out the door on the left to the fields 🌾';
+}
+function startMove(nx, ny){
+  const P = state.player;
+  if (P.leading){ lead.tx = P.x; lead.ty = P.y; }
+  pl.moving = true; pl.fx = P.x; pl.fy = P.y; pl.tx = nx; pl.ty = ny; pl.t = 0;
+}
+function updatePlayer(dt){
+  const P = state.player;
+  if (pl.fade > 0) pl.fade = Math.max(0, pl.fade - dt*3);
+  if (P.leading) updateLead(dt);
+  updatePaddock(dt);
+  for (const f of pl.fx2){ f.t -= dt; f.y -= 14*dt; }
+  pl.fx2 = pl.fx2.filter(f => f.t > 0);
+  if (pl.moving){
+    pl.t += dt * 7;   // tiles per second
+    pl.walkT += dt;
+    if (pl.t >= 1){ pl.moving = false; P.x = pl.tx; P.y = pl.ty; }
+  }
+  if (!pl.moving){
+    const dir = held[held.length-1] || pl.tap; pl.tap = null;
+    if (dir){
+      pl.path = []; pl.after = null; P.dir = dir;
+      const [dx,dy] = DIRS[dir];
+      if (walkable(P.x+dx, P.y+dy)) startMove(P.x+dx, P.y+dy);
+      else if (tryDoor(P.x+dx, P.y+dy)) return;
+    } else if (pl.path.length){
+      const [nx, ny] = pl.path.shift();
+      P.dir = nx > P.x ? 'right' : nx < P.x ? 'left' : ny > P.y ? 'down' : 'up';
+      if (walkable(nx, ny)) startMove(nx, ny); else { pl.path = []; pl.after = null; }
+    } else if (pl.after){
+      const a = pl.after; pl.after = null; P.dir = a.dir;
+      if (a.interact) interact();
+    }
+  }
+  const k = pl.moving ? pl.t : 1;
+  pl.px = pl.moving ? pl.fx + (pl.tx - pl.fx)*k : P.x;
+  pl.py = pl.moving ? pl.fy + (pl.ty - pl.fy)*k : P.y;
+}
+// walk next to (tx,ty), face it and use it
+function walkAndUse(goals){
+  const P = state.player;
+  const path = bfs(P.x, P.y, (x, y) => goals.some(g => g[0]===x && g[1]===y));
+  if (!path) return toast("Can't get there!");
+  const end = path.length ? path[path.length-1] : [P.x, P.y];
+  const g = goals.find(g => g[0]===end[0] && g[1]===end[1]);
+  pl.path = path; pl.after = {dir: g[2], interact: true};
+}
+const around = (tx, ty) => Object.entries(DIRS).map(([d, [dx,dy]]) => [tx-dx, ty-dy, d]);
+function clickScene(e){
+  const cv = e.currentTarget, r = cv.getBoundingClientRect();
+  const tx = Math.floor((e.clientX - r.left) / r.width * COLS);
+  let ty = Math.floor((e.clientY - r.top) / r.height * ROWS);
+  const P = state.player;
+  if (curMap() === 'paddock'){
+    if (tx === 0 && PADDOCK_ENTRY_ROWS.includes(ty)) return walkAndUse([[0, ty, 'left']]);
+    const h = horseNear(tx + .5, ty + .5);
+    if (h && !state.player.leading) return walkAndUse(around(Math.round(pdk[h.id].x), Math.round(pdk[h.id].y)).filter(g => paddockWalk(g[0], g[1])));
+    if (paddockWalk(tx, ty)){ pl.path = bfs(P.x, P.y, (x,y) => x===tx && y===ty) || []; pl.after = null; }
+    return;
+  }
+  if (curMap() === 'farm'){
+    if (tx === COLS-1 && FARM_EXIT_ROWS.includes(ty)) return walkAndUse([[COLS-1, ty, 'right']]);
+    if (tx <= 4 && ty <= 4) return walkAndUse(FARM_DOOR_X.map(x => [x, FARM_DOOR_Y + 1, 'up']));
+    if (plotAt(tx, ty) >= 0) return walkAndUse(around(tx, ty));
+    if (farmWalk(tx, ty)){ pl.path = bfs(P.x, P.y, (x,y) => x===tx && y===ty) || []; pl.after = null; }
+    return;
+  }
+  if (isBarnDoorTile(tx, ty)) return walkAndUse([[0, ty, 'left']]);
+  if (barnWalk(tx, ty)){ pl.path = bfs(P.x, P.y, (x,y) => x===tx && y===ty) || []; pl.after = null; return; }
+  // clicked a stall or a decoration: walk next to it, face it, and use it
+  if (ty === 2) ty = 3; if (ty === 9) ty = 8;
+  const st = stallAt(tx, ty);
+  if (st >= 0){
+    const x0 = (st % 8) * 2, gy = ty === 3 ? AISLE_TOP : AISLE_BOT, dir = ty === 3 ? 'up' : 'down';
+    return walkAndUse([[x0, gy, dir], [x0+1, gy, dir]]);
+  }
+  if (inAisle(tx, ty) && decorAt(tx, ty)) walkAndUse(around(tx, ty));
+}
+
+/* ---------- drawing the barn ---------- */
+let bgCanvas = null, bgKey = '';
+function px(ctx, col, x, y, w=1, h=1){ ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+function buildBackground(){
+  const c = document.createElement('canvas'); c.width = COLS*TILE; c.height = ROWS*TILE;
+  const g = c.getContext('2d'), rng = mulberry(42);
+  // back wall: wooden planks
+  px(g, '#7a5232', 0, 0, c.width, 32);
+  for (let x=0; x<c.width; x+=5) px(g, '#6a4529', x, 0, 1, 32);
+  for (let i=0; i<40; i++) px(g, '#8a6040', Math.floor(rng()*c.width), Math.floor(rng()*30), 1, 2);
+  px(g, '#5a3a22', 0, 0, c.width, 2);
+  px(g, '#4f331f', 0, 30, c.width, 2);
+  for (const wx of WINDOWS){
+    const x = wx*TILE + 1, y = 4;
+    px(g, '#4f331f', x, y, 14, 13);
+    px(g, '#bfe3f7', x+2, y+2, 10, 9);
+    px(g, '#e4f4fc', x+3, y+3, 3, 2);
+    px(g, '#9fd0ea', x+8, y+7, 3, 3);
+    px(g, '#4f331f', x+6, y+2, 2, 9); px(g, '#4f331f', x+2, y+6, 10, 1);
+    px(g, '#9a6a3a', x-1, y+13, 16, 2);
+  }
+  for (const hx of HOOKS) px(g, '#3a2a1a', hx*TILE + 7, 6, 2, 2);
+  // aisle floor: wide boards
+  for (let y=AISLE_TOP*TILE; y<(AISLE_BOT+1)*TILE; y++){
+    for (let x=0; x<c.width; x++){
+      const board = Math.floor((y - AISLE_TOP*TILE) / 8);
+      const shadeA = board % 2 ? '#b8956a' : '#b08d63';
+      px(g, (y % 8 === 0) ? '#957247' : shadeA, x, y);
+    }
+  }
+  for (let i=0; i<70; i++) px(g, '#a07f56', Math.floor(rng()*c.width), AISLE_TOP*TILE + Math.floor(rng()*64), 2, 1);
+  for (let i=0; i<25; i++) px(g, '#e3c76f', Math.floor(rng()*c.width), AISLE_TOP*TILE + Math.floor(rng()*64), 1, 1);
+  // the open door on the left: sunshine and grass peeking in
+  const dy = BARN_DOOR_ROWS[0]*TILE;
+  for (let x=0; x<14; x++){ g.fillStyle = `rgba(255,236,170,${.55 - x*.04})`; g.fillRect(x, dy, 1, 32); }
+  px(g, '#8cc063', 0, dy+2, 3, 28); px(g, '#7fb257', 0, dy+8, 2, 3); px(g, '#7fb257', 0, dy+20, 2, 4);
+  px(g, '#5e3a1a', 0, dy-2, 6, 2); px(g, '#5e3a1a', 0, dy+32, 6, 2);
+  // a little arrow on the floor pointing outside
+  [[9,0],[8,1],[7,2],[8,3],[9,4]].forEach(([ax, ay]) => px(g, '#ffffff', ax+2, dy+13+ay, 2, 1));
+  // stalls
+  for (let i=0; i<16; i++){
+    const sx = (i % 8) * 32, sy = i < 8 ? 32 : 128;
+    if (i < state.cap){
+      px(g, '#dcbf66', sx, sy, 32, 32);
+      for (let k=0; k<60; k++){
+        const col = rng() < .5 ? '#c9a94e' : '#efd98c';
+        px(g, col, sx + Math.floor(rng()*31), sy + Math.floor(rng()*31), 2, 1);
+      }
+    } else {
+      px(g, '#5a4632', sx, sy, 32, 32);
+      for (let k=0; k<30; k++) { px(g, '#6e5338', sx+k, sy+k, 2, 2); px(g, '#6e5338', sx+30-k, sy+k, 2, 2); }
+    }
+    // dividers between stalls
+    px(g, '#5e3a1a', sx, sy, 2, 32); px(g, '#7a4e28', sx+2, sy, 1, 32);
+    px(g, '#5e3a1a', sx+30, sy, 2, 32);
+    // bottom-row gates sit behind the horse (we look down at them)
+    if (i >= 8) drawGate(g, sx, sy, i < state.cap);
+  }
+  // front wall
+  px(g, '#7a5232', 0, 160, c.width, 16);
+  for (let x=0; x<c.width; x+=5) px(g, '#6a4529', x, 160, 1, 16);
+  px(g, '#4f331f', 0, 160, c.width, 2);
+  return c;
+}
+function drawGate(g, sx, sy, open){
+  const y = sy < 64 ? sy + 24 : sy;   // top stalls: gate on the bottom edge; bottom stalls: on the top edge
+  px(g, '#5e3a1a', sx, y, 32, 8);
+  px(g, open ? '#9a6a3a' : '#6e5338', sx+1, y+1, 30, 2);
+  px(g, open ? '#8b5a2b' : '#62492f', sx+1, y+4, 30, 3);
+  px(g, '#5e3a1a', sx+15, y, 2, 8);
+  px(g, '#c9c0b0', sx+13, y+3, 2, 2);
+}
+function drawHighlight(g, hx, hy, hw, hh){
+  g.fillStyle = '#fff6a8';
+  for (const [cx, cy, w, h] of [[hx,hy,4,1],[hx,hy,1,4],[hx+hw-4,hy,4,1],[hx+hw-1,hy,1,4],[hx,hy+hh-1,4,1],[hx,hy+hh-4,1,4],[hx+hw-4,hy+hh-1,4,1],[hx+hw-1,hy+hh-4,1,4]])
+    g.fillRect(cx, cy, w, h);
+}
+function farmerThing(g){
+  return {y: pl.py + .01, draw: () => {
+    const P = state.player;
+    const frame = pl.moving ? Math.floor(pl.walkT * 8) % 2 : 0;
+    const spr = mapCanvas(`kid:${P.dir}:${frame}`, KID[P.dir][frame], KID_COLORS);
+    const x = Math.round(pl.px*TILE + 1), y = Math.round(pl.py*TILE - 3);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x+3, y+16, 8, 2);
+    g.drawImage(spr, x, y);
+    if (P.carry) g.drawImage(itemCanvas(P.carry.type), x - 1, y - 13);
+  }};
+}
+// draw a horse standing on tile (x, y), flipped to face left if needed
+function drawHorseAt(g, h, x, y, flip, moving, time, label){
+  const fr = moving ? (Math.floor(time/110) % 2 ? 'b' : 'c') : null;
+  const c = horseCanvas({...look(h), frame: isFoal(h) ? null : fr});
+  const dx = Math.round(x*TILE + 8 - c.width/2), dy = Math.round(y*TILE + 16 - c.height);
+  g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(dx + 6, dy + c.height - 2, c.width - 12, 2);
+  if (flip){ g.save(); g.translate(dx + c.width, dy); g.scale(-1, 1); g.drawImage(c, 0, 0); g.restore(); }
+  else g.drawImage(c, dx, dy);
+  if (label){
+    g.font = 'bold 7px "Pixelify Sans", monospace'; g.textAlign = 'center';
+    g.fillStyle = 'rgba(40,28,18,.65)'; const w = g.measureText(h.name).width + 6;
+    g.fillRect(Math.round(x*TILE + 8 - w/2), dy - 8, Math.round(w), 9);
+    g.fillStyle = '#fff'; g.fillText(h.name, Math.round(x*TILE + 8), dy - 1);
+  }
+}
+function ledThing(g, time){
+  const h = state.player.leading ? byId(state.player.leading) : null;
+  if (!h) return null;
+  return {y: lead.y, draw: () => drawHorseAt(g, h, lead.x, lead.y, lead.flip, lead.moving, time, false)};
+}
+// sunrise, evening and night light
+function drawSky(g, indoor){
+  const hr = clock().hour; let col = null, a = 0;
+  if (hr < 7){ col = '255,170,90'; a = .22 * (7 - hr); }
+  else if (hr >= 18 && hr < NIGHT){ col = '255,120,60'; a = .25 * (hr - 18) / 3; }
+  else if (hr >= NIGHT){ col = '20,24,70'; a = .45; }
+  if (!col) return;
+  g.fillStyle = `rgba(${col},${indoor ? a*.5 : a})`; g.fillRect(0, 0, COLS*TILE, ROWS*TILE);
+  if (hr >= NIGHT && !indoor){
+    const rng = mulberry(5);
+    for (let i=0; i<30; i++){ const sx = Math.floor(rng()*COLS*TILE), sy = Math.floor(rng()*ROWS*TILE); if (Math.floor(performance.now()/500 + i) % 5) px(g, '#fff8d0', sx, sy, 1, 1); }
+  }
+}
+// rain streaks, falling snow and a warm sunny glow
+function drawWeather(g, W, H, time, groundSnow=true){
+  const w = state.weather || 'sunny';
+  if (w === 'rain'){
+    g.fillStyle = 'rgba(40,60,90,.18)'; g.fillRect(0, 0, W, H);
+    for (let i=0; i<80; i++){
+      const sx = (i * 53.7) % W, sp = .22 + (i % 5) * .03;
+      const y = ((i * 97.3) + time * sp) % (H + 10) - 10, x = (sx - (time * sp * .25)) % W;
+      const xx = Math.round(x < 0 ? x + W : x), yy = Math.round(y);
+      px(g, 'rgba(200,225,250,.75)', xx, yy, 1, 3); px(g, 'rgba(200,225,250,.5)', xx - 1, yy + 3, 1, 2);
+    }
+  } else if (w === 'snow'){
+    g.fillStyle = 'rgba(235,242,255,.16)'; g.fillRect(0, 0, W, H);
+    if (groundSnow){ const r = mulberry(3); for (let i=0; i<260; i++) px(g, 'rgba(255,255,255,.85)', Math.floor(r()*W), Math.floor(r()*H), 2, 1); }
+    for (let i=0; i<70; i++){
+      const base = (i * 61.3) % W, sp = .018 + (i % 4) * .006;
+      const y = ((i * 37.7) + time * sp) % (H + 4) - 4, x = base + Math.sin(time / 700 + i) * 5;
+      px(g, '#ffffff', Math.round(x), Math.round(y), (i % 3) ? 1 : 2, (i % 3) ? 1 : 2);
+    }
+  } else {
+    g.fillStyle = 'rgba(255,230,150,.07)'; g.fillRect(0, 0, W, H);
+  }
+}
+function drawOverlays(g){
+  g.font = 'bold 8px "Pixelify Sans", monospace'; g.textAlign = 'center';
+  for (const f of pl.fx2){
+    g.globalAlpha = Math.min(1, f.t * 2);
+    g.fillStyle = '#3a2a1a'; g.fillText(f.text, Math.round(f.x)+1, Math.round(f.y)+1);
+    g.fillStyle = f.col; g.fillText(f.text, Math.round(f.x), Math.round(f.y));
+  }
+  g.globalAlpha = 1;
+  if (curMap() !== 'barn') drawWeather(g, COLS*TILE, ROWS*TILE, performance.now());
+  drawSky(g, curMap() === 'barn');
+  if (pl.fade > 0){ g.fillStyle = `rgba(20,12,6,${pl.fade})`; g.fillRect(0, 0, COLS*TILE, ROWS*TILE); }
+}
+function drawScene(cv, time){
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  if (curMap() === 'farm') return drawFarm(g, time);
+  if (curMap() === 'paddock') return drawPaddock(g, time);
+  const key = state.cap;
+  if (!bgCanvas || bgKey !== key){ bgCanvas = buildBackground(); bgKey = key; }
+  g.drawImage(bgCanvas, 0, 0);
+  // saddles hanging on the wall
+  const used = new Set(state.horses.map(h => h.saddle));
+  state.saddles.filter(s => !used.has(s.id)).slice(0, HOOKS.length).forEach((s, i) => {
+    g.drawImage(saddleCanvas(s.type), HOOKS[i]*TILE, 7);
+  });
+  // horses in their stalls
+  state.horses.slice(0, state.cap).forEach((h, i) => {
+    const sx = (i % 8) * 32, sy = i < 8 ? 32 : 128;
+    if (h.out || state.player.leading === h.id){
+      // an empty stall with a little sun sign: "out in the paddock"
+      if (h.out){ px(g, '#f5d76e', sx + 13, sy + 10, 6, 6); px(g, '#f5d76e', sx + 15, sy + 7, 2, 12); px(g, '#f5d76e', sx + 10, sy + 12, 12, 2); }
+      return;
+    }
+    const c = horseCanvas(look(h));
+    const bob = h.happy >= 50 && Math.floor(time/600 + i) % 2 ? -1 : 0;
+    g.drawImage(c, sx + Math.floor((32 - c.width)/2), sy + (i < 8 ? 4 : 6) + bob);
+    let bub = null;
+    if (h.hunger < 30 || h.happy < 25) bub = 'alert';
+    else if (h.preg) bub = 'heart';
+    if (bub && Math.floor(time/500) % 3) g.drawImage(mapCanvas('bubble:'+bub, BUBBLE[bub], BUBBLE_COLORS), sx + 20, sy - 2);
+  });
+  // top-row gates in front of the horses
+  for (let i=0; i<8; i++) drawGate(g, i*32, 32, i < state.cap);
+  // facing highlight
+  const [fx, fy] = facing(), st = stallAt(fx, fy);
+  if (!pl.moving && Math.floor(time/400) % 2){
+    if (st >= 0) drawHighlight(g, (st%8)*32, st < 8 ? 32 : 128, 32, 32);
+    else if (decorAt(fx, fy) || (state.player.carry && barnWalk(fx, fy))) drawHighlight(g, fx*TILE, fy*TILE, TILE, TILE);
+  }
+  // decorations and the farmer, drawn from back to front
+  const things = state.decor.map(d => ({y: d.y, draw: () => g.drawImage(itemCanvas(d.type), d.x*TILE, d.y*TILE)}));
+  things.push(farmerThing(g));
+  const lt = ledThing(g, time); if (lt) things.push(lt);
+  things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
+  drawOverlays(g);
+}
+
+/* ---------- drawing the farm outside ---------- */
+let farmBg = null, farmBgKey = '';
+function buildFarm(){
+  const c = document.createElement('canvas'); c.width = COLS*TILE; c.height = ROWS*TILE;
+  const g = c.getContext('2d'), rng = mulberry(7);
+  // grass with little flowers
+  px(g, '#8cc063', 0, 0, c.width, c.height);
+  for (let i=0; i<500; i++) px(g, rng() < .5 ? '#7fb257' : '#9ccc70', Math.floor(rng()*c.width), Math.floor(rng()*c.height), 1, 2);
+  for (let i=0; i<40; i++){
+    const fx = Math.floor(rng()*c.width), fy = Math.floor(rng()*c.height);
+    px(g, ['#ffffff','#f5d76e','#ef8fb3'][i%3], fx, fy, 1, 1);
+  }
+  // dirt path from the barn door to the field gate
+  for (const [x, y] of PATH){
+    px(g, '#cfae7a', x*TILE+1, y*TILE+1, 14, 14);
+    px(g, '#cfae7a', x*TILE+3, y*TILE, 10, 16); px(g, '#cfae7a', x*TILE, y*TILE+3, 16, 10);
+    for (let k=0; k<4; k++) px(g, '#b8955f', x*TILE + 2 + Math.floor(rng()*12), y*TILE + 2 + Math.floor(rng()*12), 2, 1);
+  }
+  // the barn building (top-left, 5 x 5 tiles)
+  const bw = 5*TILE, bh = 5*TILE;
+  px(g, '#6e9a4c', 2, bh, bw - 2, 3);                        // shadow on the grass
+  px(g, '#b8432f', 0, 14, bw, bh - 14);                       // red walls
+  for (let x=3; x<bw; x+=5) px(g, '#a03a28', x, 16, 1, bh - 16);
+  px(g, '#6b2f24', 0, 0, bw, 16);                             // roof
+  for (let y=2; y<16; y+=4) px(g, '#5a271e', 0, y, bw, 1);
+  for (let x=0; x<bw; x+=6) px(g, '#7d3a2c', x, 0, 3, 16);
+  px(g, '#f3ece0', 0, 14, bw, 2);                             // white trim
+  px(g, '#f3ece0', 0, 14, 2, bh - 14); px(g, '#f3ece0', bw - 2, 14, 2, bh - 14);
+  px(g, '#f3ece0', 31, 19, 18, 14); px(g, '#3a2618', 33, 21, 14, 10); px(g, '#e3c76f', 33, 27, 14, 4);   // hayloft
+  px(g, '#f3ece0', 14, 44, 52, 36);                           // big door frame
+  px(g, '#3a2618', 17, 47, 46, 33);                           // open doorway
+  px(g, '#c9a94e', 17, 72, 46, 8); px(g, '#e3c76f', 22, 75, 8, 2); px(g, '#e3c76f', 44, 73, 10, 2);
+  for (let k=0; k<14; k++){ px(g, '#f3ece0', 3+k*0.7, 47+k*2.3, 2, 2); }  // door swung open (left)
+  px(g, '#a03a28', 3, 46, 11, 34); px(g, '#f3ece0', 3, 46, 11, 2); px(g, '#f3ece0', 3, 78, 11, 2);
+  for (let k=0; k<10; k++){ px(g, '#f3ece0', 4+k, 48+k*3, 2, 2); }
+  px(g, '#a03a28', 66, 46, 11, 34); px(g, '#f3ece0', 66, 46, 11, 2); px(g, '#f3ece0', 66, 78, 11, 2);
+  for (let k=0; k<10; k++){ px(g, '#f3ece0', 75-k, 48+k*3, 2, 2); }
+  // pond
+  const [pxl, pyl] = [POND[0][0]*TILE, POND[0][1]*TILE];
+  for (let y=0; y<32; y++){
+    const inset = y < 4 ? 6 - y : y > 27 ? y - 25 : 2;
+    px(g, '#4a8cbd', pxl + inset, pyl + y, 48 - inset*2, 1);
+    if (y > 1 && y < 30) px(g, '#5fa7d6', pxl + inset + 2, pyl + y, 44 - inset*2, 1);
+  }
+  px(g, '#a9d8f2', pxl+10, pyl+8, 8, 1); px(g, '#a9d8f2', pxl+28, pyl+18, 10, 1); px(g, '#a9d8f2', pxl+16, pyl+24, 5, 1);
+  px(g, '#5e9c3a', pxl+40, pyl+2, 2, 6); px(g, '#5e9c3a', pxl+43, pyl+4, 2, 5); px(g, '#7a5232', pxl+40, pyl+1, 2, 2);
+  // field soil (owned) or wild grass (not bought yet)
+  for (let i=0; i<12; i++){
+    const [x, y] = plotPos(i), X = x*TILE, Y = y*TILE;
+    if (i < state.plots.length){
+      px(g, '#6a4a2e', X, Y, 16, 16);
+      px(g, '#7a5536', X+1, Y+1, 14, 14);
+      for (const fy of [4, 9, 14]) px(g, '#5e3f26', X+1, Y+fy, 14, 1);
+    } else {
+      px(g, '#80b35a', X+1, Y+1, 14, 14);
+      for (let k=1; k<15; k+=3){ px(g, '#6a9a48', X+k, Y+1, 2, 1); px(g, '#6a9a48', X+k, Y+14, 2, 1); px(g, '#6a9a48', X+1, Y+k, 1, 2); px(g, '#6a9a48', X+14, Y+k, 1, 2); }
+    }
+  }
+  // fence around the field
+  for (let y=FENCE.y0; y<=FENCE.y1; y++) for (let x=FENCE.x0; x<=FENCE.x1; x++){
+    if (!isFence(x, y)) continue;
+    const X = x*TILE, Y = y*TILE;
+    const horiz = y === FENCE.y0 || y === FENCE.y1;
+    if (horiz){
+      px(g, '#5e3a1a', X, Y+5, 16, 3); px(g, '#9a6a3a', X, Y+5, 16, 2);
+      px(g, '#5e3a1a', X, Y+10, 16, 3); px(g, '#9a6a3a', X, Y+10, 16, 2);
+    } else {
+      px(g, '#5e3a1a', X+6, Y, 4, 16); px(g, '#9a6a3a', X+6, Y, 3, 16);
+    }
+    px(g, '#5e3a1a', X+5, Y+2, 6, 13); px(g, '#b07a46', X+6, Y+2, 4, 12); px(g, '#c48c55', X+6, Y+2, 4, 2);
+  }
+  // signpost: "paddock this way →"
+  const SX = 13*TILE, SY = 8*TILE;
+  px(g, '#5e3a1a', SX+7, SY+4, 2, 11);
+  px(g, '#5e3a1a', SX, SY-1, 16, 9); px(g, '#c48c55', SX+1, SY, 13, 7); px(g, '#c48c55', SX+14, SY+2, 1, 3);
+  [[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[8,2],[8,4],[7,1],[7,5]].forEach(([ax, ay]) => px(g, '#5e3a1a', SX+ax+1, SY+ay, 1, 1));
+  return c;
+}
+const TREE_SPR = [
+  "....gggggg....",
+  "..gggGggggg...",
+  ".ggggggggGggg.",
+  "gggGggggggggGg",
+  "ggggggGggggggg",
+  "gGgggggggGgggg",
+  "gggggGgggggggg",
+  "ggGggggggggGgg",
+  ".gggggggGgggg.",
+  "..gggGgggggg..",
+  "....gggggg....",
+  "......tt......",
+  "......tt......",
+  "......Tt......",
+  ".....tTtt.....",
+];
+const SCARECROW_SPR = [
+  "....YYYY......",
+  "...YyyyyY.....",
+  "..YYYYYYYY....",
+  "....ssss......",
+  "....sese......",
+  "....ssss......",
+  ".rrrrrrrrrr...",
+  "....rrrr......",
+  "....rRrr......",
+  "....bbbb......",
+  "......t.......",
+  "......t.......",
+  "......t.......",
+  ".....ttt......",
+];
+const NATURE_COLORS = {g:'#5e9c3a', G:'#3f7a26', t:'#7a5232', T:'#5a3a22', Y:'#b98d2c', y:'#ecc75e', s:'#d9c08a', e:'#3a2a1a', r:'#4f86b8', R:'#3a6a99', b:'#8a6040'};
+let paddockBg = null;
+function buildPaddock(){
+  const c = document.createElement('canvas'); c.width = COLS*TILE; c.height = ROWS*TILE;
+  const g = c.getContext('2d'), rng = mulberry(11);
+  px(g, '#8cc063', 0, 0, c.width, c.height);
+  // lush meadow inside the fence
+  px(g, '#96c96a', (PADDOCK.x0+1)*TILE, (PADDOCK.y0+1)*TILE, (PADDOCK.x1-PADDOCK.x0-1)*TILE, (PADDOCK.y1-PADDOCK.y0-1)*TILE);
+  for (let i=0; i<700; i++) px(g, rng() < .5 ? '#7fb257' : '#a6d47a', Math.floor(rng()*c.width), Math.floor(rng()*c.height), 1, 2);
+  for (let i=0; i<60; i++) px(g, ['#ffffff','#f5d76e','#ef8fb3','#c9a8f0'][i%4], Math.floor(rng()*c.width), Math.floor(rng()*c.height), 1, 1);
+  // path from the fields to the gate
+  for (let x=0; x<=PADDOCK.x0; x++) for (const y of [6, 7]){
+    px(g, '#cfae7a', x*TILE, y*TILE + 2, 16, 12); px(g, '#cfae7a', x*TILE, y*TILE, 16, 16);
+  }
+  px(g, '#8cc063', 0, 6*TILE, 4*TILE, 1); px(g, '#8cc063', 0, 8*TILE - 1, 4*TILE, 1);
+  for (let k=0; k<10; k++) px(g, '#b8955f', Math.floor(rng()*4*TILE), 6*TILE + 2 + Math.floor(rng()*28), 2, 1);
+  // fence
+  for (let y=PADDOCK.y0; y<=PADDOCK.y1; y++) for (let x=PADDOCK.x0; x<=PADDOCK.x1; x++){
+    if (!isPaddockFence(x, y)) continue;
+    const X = x*TILE, Y = y*TILE, horiz = y === PADDOCK.y0 || y === PADDOCK.y1;
+    if (horiz){ px(g, '#5e3a1a', X, Y+5, 16, 3); px(g, '#f1ebdc', X, Y+5, 16, 2); px(g, '#5e3a1a', X, Y+10, 16, 3); px(g, '#f1ebdc', X, Y+10, 16, 2); }
+    else { px(g, '#5e3a1a', X+6, Y, 4, 16); px(g, '#f1ebdc', X+6, Y, 3, 16); }
+    px(g, '#5e3a1a', X+5, Y+2, 6, 13); px(g, '#ffffff', X+6, Y+2, 4, 12);
+  }
+  // open gate swung back
+  px(g, '#5e3a1a', PADDOCK.x0*TILE + 4, 6*TILE - 6, 8, 3); px(g, '#f1ebdc', PADDOCK.x0*TILE + 4, 6*TILE - 6, 8, 2);
+  // a sign: "PADDOCK" (a little horseshoe)
+  px(g, '#5e3a1a', 1*TILE+7, 5*TILE+6, 2, 10); px(g, '#5e3a1a', 1*TILE, 5*TILE, 16, 8); px(g, '#c48c55', 1*TILE+1, 5*TILE+1, 14, 6);
+  [[5,2],[5,3],[5,4],[6,5],[7,5],[8,5],[9,5],[10,4],[10,3],[10,2]].forEach(([a,b]) => px(g, '#5e3a1a', 1*TILE+a, 5*TILE+b, 1, 1));
+  return c;
+}
+function drawPaddock(g, time){
+  if (!paddockBg) paddockBg = buildPaddock();
+  g.drawImage(paddockBg, 0, 0);
+  const P = state.player;
+  const things = PADDOCK_TREES.map(([x, y]) => ({y, draw: () => g.drawImage(mapCanvas('tree', TREE_SPR, NATURE_COLORS), x*TILE, y*TILE - 2)}));
+  things.push({y: TROUGH[0][1], draw: () => { const t = itemCanvas('trough'); g.drawImage(t, TROUGH[0][0]*TILE, TROUGH[0][1]*TILE); g.drawImage(t, TROUGH[1][0]*TILE, TROUGH[1][1]*TILE); }});
+  for (const h of state.horses){
+    if (!h.out) continue;
+    const p = pdk[h.id] || (placeInPaddock(h), pdk[h.id]);
+    const near = Math.hypot(p.x - pl.px, p.y - pl.py) < 2.2;
+    things.push({y: p.y, draw: () => {
+      drawHorseAt(g, h, p.x, p.y, p.flip, p.moving, time + h.id*97, near);
+      if (rugOK(h)) return;
+      const cx = p.x*TILE + 8, cy = p.y*TILE + 2;
+      if ((state.weather || 'sunny') === 'sunny'){
+        for (let k=0; k<4; k++){ const a = time/180 + k*1.7 + h.id; px(g, '#1a1a1a', Math.round(cx + Math.cos(a)*9), Math.round(cy - 4 + Math.sin(a*1.3)*5), 1, 1); }
+      } else if (Math.floor(time/500) % 3) g.drawImage(mapCanvas('bubble:alert', BUBBLE.alert, BUBBLE_COLORS), Math.round(cx + 4), Math.round(cy - 18));
+    }});
+  }
+  things.push(farmerThing(g));
+  const lt = ledThing(g, time); if (lt) things.push(lt);
+  // highlight a horse you can lead
+  if (!P.leading && !pl.moving){
+    const [fx, fy] = facing(), h = horseNear(fx, fy) || horseNear(P.x, P.y);
+    if (h && Math.floor(time/400) % 2){ const q = pdk[h.id]; drawHighlight(g, Math.round(q.x*TILE - 8), Math.round(q.y*TILE - 8), 32, 24); }
+  }
+  things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
+  drawOverlays(g);
+}
+function drawFarm(g, time){
+  const key = state.plots.length;
+  if (!farmBg || farmBgKey !== key){ farmBg = buildFarm(); farmBgKey = key; }
+  g.drawImage(farmBg, 0, 0);
+  // crops growing in the fields
+  state.plots.forEach((p, i) => {
+    if (!p.crop) return;
+    const [x, y] = plotPos(i), X = x*TILE, Y = y*TILE;
+    const c = CROPS[p.crop], prog = clamp((now() - p.at) / (c.time*1000), 0, 1);
+    const spr = mapCanvas('crop14:'+p.crop, SPR[p.crop], CROP_COLORS);
+    if (prog >= 1){
+      const bob = Math.floor(time/400 + i) % 2 ? -1 : 0;
+      g.drawImage(spr, X+1, Y + bob);
+      if (Math.floor(time/300 + i*2) % 4 === 0){ px(g, '#ffffff', X+13, Y+2, 1, 3); px(g, '#ffffff', X+12, Y+3, 3, 1); }
+    } else {
+      if (prog < .34){ px(g, '#7bbf4a', X+7, Y+9, 2, 2); px(g, '#4f8a2b', X+7, Y+11, 2, 1); }
+      else if (prog < .67) g.drawImage(mapCanvas('crop14:sprout', SPR.sprout, CROP_COLORS), X+1, Y+1);
+      else g.drawImage(spr, 0, 6, spr.width, spr.height - 6, X+1, Y+6, spr.width, spr.height - 6);
+      px(g, '#3a2a1a', X+1, Y+15, 14, 1); px(g, '#9fdc6a', X+1, Y+15, Math.max(1, Math.round(14*prog)), 1);
+    }
+  });
+  // facing highlight
+  const [fx, fy] = facing();
+  if (!pl.moving && Math.floor(time/400) % 2){
+    if (plotAt(fx, fy) >= 0) drawHighlight(g, fx*TILE, fy*TILE, TILE, TILE);
+    else if (isFarmDoor(fx, fy)) drawHighlight(g, 1*TILE, 3*TILE, 3*TILE, 2*TILE);
+  }
+  // trees, scarecrow and the farmer, back to front
+  const things = TREES.map(([x, y]) => ({y, draw: () => g.drawImage(mapCanvas('tree', TREE_SPR, NATURE_COLORS), x*TILE, y*TILE - 2)}));
+  things.push({y: SCARECROW[1], draw: () => g.drawImage(mapCanvas('scarecrow', SCARECROW_SPR, NATURE_COLORS), SCARECROW[0]*TILE + 1, SCARECROW[1]*TILE - 1)});
+  things.push(farmerThing(g));
+  const lt = ledThing(g, time); if (lt) things.push(lt);
+  things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
+  drawOverlays(g);
+}
+
+let lastFrame = performance.now();
+function dayBanner(){
+  const c = clock(), total = state.horses.length, out = outCount(), inside = total - out;
+  const left = (MORNING_END - c.hour) / 18 * DAY_MS / 1000;
+  if (c.hour >= NIGHT) return {kind:'night', text:`🌙 Night time — your horses are asleep in the barn. A new day starts at 6:00.`};
+  if (!total) return {kind:'', text:`${clockText(c.hour)} · Buy a horse at the 🏷️ Market!`};
+  const W0 = WEATHER[state.weather || 'sunny'], bad0 = state.horses.filter(h => h.out && !rugOK(h)).length;
+  if (c.hour < MORNING_END){
+    if (!inside && bad0) return {kind:'sad', text:`${W0.icon} It's ${W0.name.toLowerCase()}! ${bad0} horse${bad0>1?'s':''} in the paddock need${bad0>1?'':'s'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}. Put one on from the horse cards below.`};
+    if (!inside) return {kind:'good', text:`🌅 Good morning! All ${total} horses are out in the paddock. 🌳`};
+    const W = WEATHER[state.weather || 'sunny'];
+    return {kind:'morning', text:`🌅 Morning! ${W.icon} ${W.name} today, so use ${RUG_KINDS[W.needs].name.toLowerCase()}s. Take your horses to the paddock before 10:00 (${fmt(left)} left): ${out} of ${total} out. Lead them past the fields to the right →`};
+  }
+  if (inside) return {kind:'sad', text:`😢 ${inside} horse${inside>1?'s are':' is'} stuck inside and getting sad. Take ${inside>1?'them':'it'} to the paddock!`};
+  const W = WEATHER[state.weather || 'sunny'], bad = state.horses.filter(h => h.out && !rugOK(h)).length;
+  if (bad) return {kind:'sad', text:`${W.icon} It's ${W.name.toLowerCase()}! ${bad} horse${bad>1?'s':''} in the paddock need${bad>1?'':'s'} a ${RUG_KINDS[W.needs].name.toLowerCase()}. Put one on from the horse cards below.`};
+  return {kind:'good', text:`☀️ ${clockText(c.hour)} · All your horses are happily grazing in the paddock. 🌳`};
+}
+function frame(time){
+  const dt = Math.min(.1, (time - lastFrame) / 1000); lastFrame = time;
+  const rc = document.getElementById('ride');
+  if (rc && state.tab === 'ride'){
+    if (!rc.dataset.bound){ rc.dataset.bound = 1; rc.addEventListener('pointerdown', e => { e.preventDefault(); ride ? rideJump() : startRide(); }); }
+    if (!$('#modal').classList.contains('on')) updateRide(dt);
+    if (state.tab === 'ride' && document.getElementById('ride')) drawRide(document.getElementById('ride'), time);
+    rideHUD();
+  }
+  const cv = document.getElementById('scene');
+  if (cv && state.tab === 'stable'){
+    if (!cv.dataset.bound){ cv.dataset.bound = 1; cv.addEventListener('pointerdown', clickScene); }
+    if (!$('#modal').classList.contains('on')) updatePlayer(dt);
+    drawScene(cv, time);
+    const banner = dayBanner();
+    const bEl = $('#dayBanner');
+    if (bEl && bEl.dataset.t !== banner.text){ bEl.dataset.t = banner.text; bEl.textContent = banner.text; bEl.className = 'daybanner ' + banner.kind; }
+    const hint = hintText();
+    if (hint !== lastHint || !$('#hint').textContent){ lastHint = hint; $('#hint').textContent = hint; }
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const KEY_DIR = {ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right'};
+function sceneActive(e){ return state.tab === 'stable' && !$('#modal').classList.contains('on') && !(e.target.matches && e.target.matches('input,textarea')); }
+document.addEventListener('keydown', e => {
+  if (!sceneActive(e)) return;
+  const dir = KEY_DIR[e.key];
+  if (dir){ e.preventDefault(); if (!held.includes(dir)) held.push(dir); if (!e.repeat) pl.tap = dir; return; }
+  if (e.key === 'e' || e.key === 'E' || e.key === ' '){ e.preventDefault(); if (!e.repeat) interact(); }
+  if (curMap() === 'farm' && ['1','2','3'].includes(e.key)){ state.seed = Object.keys(CROPS)[+e.key - 1]; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (state.tab !== 'ride' || $('#modal').classList.contains('on')) return;
+  if (e.target.matches && e.target.matches('input,textarea')) return;
+  if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)){
+    e.preventDefault();
+    if (e.repeat) return;
+    if (ride) rideJump(); else if (e.key === ' ') startRide();
+  }
+});
+document.addEventListener('keyup', e => {
+  const dir = KEY_DIR[e.key];
+  if (dir){ const i = held.indexOf(dir); if (i >= 0) held.splice(i, 1); }
+});
+window.addEventListener('blur', () => held.length = 0);
+let padDir = null;   // direction held on the on-screen arrows
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('[data-dir]'); if (!b) return;
+  e.preventDefault(); padDir = b.dataset.dir; held.push(padDir); pl.tap = padDir;
+});
+['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, () => {
+  if (!padDir) return;
+  const i = held.lastIndexOf(padDir); if (i >= 0) held.splice(i, 1);
+  padDir = null;
+}));
+
+/* =========================================================
+   RIDING MINI-GAME — jump fences, grab coins and carrots!
+   Speed   → how fast you gallop (more coins per meter)
+   Stamina → how many knock-downs you can take (hearts)
+   Gentle  → how high your horse jumps when you ask
+   ========================================================= */
+const RW = 256, RH = 128, GROUND = 112;
+const RIDE_X = 44;
+let ride = null;          // the run in progress
+let rideBuffer = 0;       // a jump pressed just before landing still counts
+
+function canRide(h){
+  if (!h) return 'Pick a horse';
+  if (isFoal(h)) return 'Too young to ride';
+  if (h.preg) return 'Expecting a foal';
+  if (!saddleOf(h)) return 'Needs a saddle';
+  if (h.hunger < 30) return 'Too hungry';
+  return null;
+}
+function startRide(){
+  const h = byId(state.rideSel);
+  const why = canRide(h); if (why) return toast(`${h ? h.name + ': ' : ''}${why}`);
+  ride = {
+    h, running:true, t:0, dist:0, speed: 95 + h.speed*.55,
+    y:0, vy:0, hearts: 2 + Math.floor(h.stamina/34), maxHearts: 2 + Math.floor(h.stamina/34),
+    jumpV: 290 + h.temper*.9, hurt:0, coins:0, carrots:0, cleared:0,
+    obstacles:[], items:[], fx:[], nextAt: 220, scroll:0, ready:1.2,
+  };
+  $('#rideMsg') && ($('#rideMsg').textContent = '');
+  render();
+}
+function rideJump(){
+  if (!ride || !ride.running) return;
+  if (ride.y === 0 && ride.ready <= 0){ ride.vy = -ride.jumpV; }
+  else rideBuffer = .14;
+}
+function spawnObstacle(){
+  const r = ride, roll = Math.random(), dist = r.dist;
+  let type = 'fence';
+  if (dist > 60 && roll < .3) type = 'hedge';
+  else if (dist > 120 && roll < .55) type = 'tall';
+  else if (roll < .7) type = 'hay';
+  const c = type === 'hay' ? itemCanvas('hayBale') : mapCanvas('jump:'+type, JUMP_SPR[type], JUMP_COLORS);
+  // the hay bale sprite has empty rows on top; measure its real height
+  const top = type === 'hay' ? 4 : 1;
+  const ob = {type, c, x: RW + 10, w: c.width, h: c.height - top, top, hit:false, passed:false};
+  r.obstacles.push(ob);
+  // coins over the jump, or a carrot on the ground after it
+  if (Math.random() < .6){
+    for (let i=0; i<3; i++) r.items.push({type:'coin', x: ob.x + ob.w/2 - 14 + i*14, y: GROUND - ob.h - 18 - (i===1 ? 8 : 0)});
+  } else if (Math.random() < .5){
+    r.items.push({type:'carrot', x: ob.x + ob.w + 50, y: GROUND - 16});
+  }
+  const gap = 150 + Math.random()*130 + r.speed*.35;
+  r.nextAt = gap;
+}
+function updateRide(dt){
+  const r = ride; if (!r || !r.running) return;
+  r.t += dt;
+  if (r.ready > 0){ r.ready -= dt; return; }
+  r.speed += dt * 2.2;                       // it gets faster and faster
+  const move = r.speed * dt;
+  r.scroll += move; r.dist += move / 16;     // 16 pixels = 1 meter
+  // jumping
+  if (rideBuffer > 0){ rideBuffer -= dt; if (r.y === 0){ r.vy = -r.jumpV; rideBuffer = 0; } }
+  r.vy += 1100 * dt; r.y = Math.min(0, r.y + r.vy * dt);
+  if (r.y === 0) r.vy = 0;
+  if (r.hurt > 0) r.hurt -= dt;
+  // move everything left
+  r.nextAt -= move; if (r.nextAt <= 0) spawnObstacle();
+  for (const o of r.obstacles) o.x -= move;
+  for (const it of r.items) it.x -= move;
+  for (const f of r.fx){ f.t -= dt; f.y -= 20*dt; }
+  r.obstacles = r.obstacles.filter(o => o.x + o.w > -10);
+  r.items = r.items.filter(it => it.x > -10 && !it.got);
+  r.fx = r.fx.filter(f => f.t > 0);
+  // the horse's body (a bit smaller than the picture, to be fair)
+  const hx1 = RIDE_X + 6, hx2 = RIDE_X + 27, hBottom = GROUND + r.y, hTop = hBottom - 18;
+  for (const o of r.obstacles){
+    const oTop = GROUND - o.h + 2;
+    if (!o.hit && !o.passed && hx2 > o.x + 2 && hx1 < o.x + o.w - 2 && hBottom > oTop){
+      o.hit = true; r.hearts--; r.hurt = 1;
+      r.fx.push({text:'Oops!', x: o.x, y: oTop - 6, t: 1, col:'#d43d2a'});
+      if (r.hearts <= 0) return endRide();
+    }
+    if (!o.hit && !o.passed && o.x + o.w < hx1){ o.passed = true; r.cleared++; r.fx.push({text:'Clear!', x: RIDE_X + 8, y: hTop - 10, t: .8, col:'#4a7330'}); }
+  }
+  for (const it of r.items){
+    if (it.got) continue;
+    if (it.x + 8 > hx1 && it.x < hx2 && it.y + 8 > hTop - 14 && it.y < hBottom){
+      it.got = true;
+      if (it.type === 'coin'){ r.coins++; r.fx.push({text:'+2', x: it.x, y: it.y, t:.6, col:'#b5861a'}); }
+      else { r.carrots++; r.fx.push({text:'+🥕', x: it.x, y: it.y, t:.6, col:'#c4621a'}); }
+    }
+  }
+}
+function endRide(){
+  const r = ride; if (!r || !r.running) return;
+  r.running = false;
+  const h = r.h, m = Math.floor(r.dist);
+  const coins = Math.floor(m/4) + r.coins*2 + r.cleared*3;
+  state.coins += coins; state.inv.carrot += r.carrots;
+  h.hunger = clamp(h.hunger - 20, 0, 100); h.happy = clamp(h.happy + 10, 0, 100);
+  // riding trains your horse! +1 to a stat for every 120 m (up to 3 per ride)
+  const gains = []; const keys = {speed:'Speed', stamina:'Stamina', temper:'Gentle'};
+  for (let i=0; i<Math.min(3, Math.floor(m/120)); i++){
+    const k = pick(Object.keys(keys)); if (h[k] < 100){ h[k]++; gains.push(keys[k]); }
+  }
+  const best = !h.best || m > h.best; if (best) h.best = m;
+  const gainTxt = gains.length ? gains.map(g => `+1 ${g}`).join(', ') : 'Ride farther than 120 m to train stats!';
+  save();
+  showModal(`<div class="mpic">${horseImg(look(h), 5, 'bob')}</div>
+    <h2>${best && m > 0 ? '🏆 New record!' : 'Good ride!'}</h2>
+    <p><b>${esc(h.name)}</b> galloped <b>${m} m</b> and cleared <b>${r.cleared}</b> jump${r.cleared===1?'':'s'}.</p>
+    <p>🪙 +${coins} coins${r.carrots ? ` · 🥕 +${r.carrots} carrot${r.carrots>1?'s':''}` : ''}</p>
+    <p>💪 ${gainTxt}</p>
+    <p style="font-size:13px">${esc(h.name)} is a bit hungry now (food −20) but had fun (happiness +10).</p>
+    <button class="primary" data-act="closeModal">Yay!</button>`);
+  ride = null;
+  render();
+}
+function drawRide(cv, time){
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const r = ride, scroll = r ? r.scroll : time * .01;
+  // sky
+  px(g, '#bfe3f7', 0, 0, RW, RH);
+  px(g, '#d6eefa', 0, 50, RW, 30);
+  const cloud = mapCanvas('jump:cloud', JUMP_SPR.cloud, JUMP_COLORS, null);
+  for (let i=0; i<4; i++){
+    const x = ((i*110 - scroll*.1) % 440 + 440) % 440 - 40;
+    g.drawImage(cloud, Math.round(x), 14 + (i%2)*16);
+  }
+  // far hills
+  for (let x=0; x<RW; x++){
+    const wx = x + scroll*.25;
+    const hgt = 22 + Math.round(Math.sin(wx/37)*8 + Math.sin(wx/13)*3);
+    px(g, '#8fbf62', x, GROUND - 28 - hgt, 1, hgt + 30);
+  }
+  // fence line in the background
+  for (let x = -((scroll*.5) % 24); x < RW; x += 24){ px(g, '#f1ebdc', Math.round(x), GROUND - 30, 2, 14); }
+  px(g, '#f1ebdc', 0, GROUND - 27, RW, 2); px(g, '#f1ebdc', 0, GROUND - 21, RW, 2);
+  drawWeather(g, RW, GROUND - 16, r ? r.t*1000 : time, false);
+  // grass + sandy track
+  px(g, '#9cc56a', 0, GROUND - 16, RW, 16);
+  for (let x = -((scroll) % 12); x < RW; x += 12) px(g, '#7fae4f', Math.round(x), GROUND - 12, 1, 2);
+  px(g, '#d9b97f', 0, GROUND, RW, RH - GROUND);
+  px(g, '#c9a36b', 0, GROUND, RW, 2);
+  for (let x = -((scroll) % 20); x < RW; x += 20){ px(g, '#c49c63', Math.round(x)+3, GROUND+6, 3, 1); px(g, '#e6cb98', Math.round(x)+12, GROUND+12, 2, 1); }
+
+  const h = r ? r.h : byId(state.rideSel);
+  if (r){
+    for (const o of r.obstacles){
+      if (o.hit && o.type !== 'hay' && o.type !== 'hedge'){
+        // knocked-down poles lying on the ground
+        g.save(); g.translate(Math.round(o.x), GROUND - 3); g.drawImage(o.c, 0, 2, o.w, 1, 0, 0, o.w, 1); g.drawImage(o.c, 0, 2, o.w, 1, 2, 2, o.w, 1); g.restore();
+        g.drawImage(o.c, 0, 0, 3, o.c.height, Math.round(o.x), GROUND - o.c.height + 1, 3, o.c.height);
+        g.drawImage(o.c, o.w - 4, 0, 4, o.c.height, Math.round(o.x) + o.w - 4, GROUND - o.c.height + 1, 4, o.c.height);
+      } else {
+        g.drawImage(o.c, Math.round(o.x), GROUND - o.c.height + 1);
+      }
+    }
+    const coin = mapCanvas('jump:coin', JUMP_SPR.coin, JUMP_COLORS);
+    const carrot = mapCanvas('crop:carrot2', SPR.carrot, CROP_COLORS);
+    for (const it of r.items){
+      const bob = Math.round(Math.sin(time/150 + it.x/20));
+      g.drawImage(it.type === 'coin' ? coin : carrot, Math.round(it.x), Math.round(it.y) + bob);
+    }
+  }
+  if (h){
+    const running = r && r.running && r.ready <= 0;
+    const frameName = !running ? null : r.y < 0 ? 'b' : (Math.floor(r.t * 10) % 2 ? 'b' : 'c');
+    const hc = horseCanvas({...look(h), rug: null, frame: frameName});
+    const y = Math.round(GROUND - 23 + (r ? r.y : 0));
+    const blink = r && r.hurt > 0 && Math.floor(r.t*12) % 2;
+    g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(RIDE_X + 6, GROUND - 1, 22, 2);
+    if (!blink){
+      g.drawImage(hc, RIDE_X, y);
+      if (saddleOf(h)) g.drawImage(mapCanvas('kid:ride', KID.ride, KID_COLORS), RIDE_X + 5, y - 3 + (running && !(r.y<0) && Math.floor(r.t*10)%2 ? 1 : 0));
+    }
+  }
+  if (r){
+    g.font = 'bold 9px "Pixelify Sans", monospace'; g.textAlign = 'center';
+    for (const f of r.fx){ g.fillStyle = f.col; g.fillText(f.text, Math.round(f.x + 8), Math.round(f.y)); }
+    if (r.ready > 0){
+      g.font = 'bold 22px "Pixelify Sans", monospace'; g.fillStyle = '#fff'; g.strokeStyle = '#4f3520'; g.lineWidth = 3;
+      const txt = r.ready > .5 ? 'Ready...' : 'GO!';
+      g.strokeText(txt, RW/2, 56); g.fillText(txt, RW/2, 56);
+    }
+  }
+}
+function rideHUD(){
+  const el = $('#rideHud'); if (!el) return;
+  const r = ride;
+  if (!r){ el.innerHTML = ''; return; }
+  const txt = `<span>${'❤️'.repeat(Math.max(0,r.hearts))}${'🤍'.repeat(Math.max(0, r.maxHearts - r.hearts))}</span>
+    <span>📏 ${Math.floor(r.dist)} m</span><span>🪙 ${r.coins*2}</span><span>🥕 ${r.carrots}</span>`;
+  if (el.dataset.t !== txt){ el.dataset.t = txt; el.innerHTML = txt; }
+}
+function rideView(){
+  const riders = state.horses.filter(h => !isFoal(h));
+  if (!state.rideSel || !byId(state.rideSel) || isFoal(byId(state.rideSel))){
+    const first = riders.find(h => !canRide(h)) || riders[0];
+    state.rideSel = first ? first.id : null;
+  }
+  const h = byId(state.rideSel), why = canRide(h);
+  return `<div class="panel"><h2>🏇 Riding ring</h2>
+      <p>Gallop and jump over fences, hedges and hay bales! Grab 🪙 coins and 🥕 carrots on the way. Knocking a jump down costs a ❤️.
+      <b>Speed</b> makes you faster, <b>Stamina</b> gives more hearts, and <b>Gentle</b> horses jump higher. Every ride trains your horse!</p></div>
+    <div class="panel scene-wrap">
+      <div class="ridehud" id="rideHud"></div>
+      <canvas id="ride" width="${RW}" height="${RH}"></canvas>
+      <div class="scene-ui">
+        ${ride ? `<button class="primary actbtn" data-act="jump" style="width:auto;padding:0 28px;border-radius:32px">⤴ Jump</button>`
+               : `<button class="primary" data-act="startRide" ${why ? 'disabled' : ''} style="font-size:18px;padding:10px 22px">🏇 Start ride${h ? ' on ' + esc(h.name) : ''}</button>
+                  <span class="hint">${why ? '⚠️ ' + why + (why === 'Needs a saddle' ? ' (buy one at the 🏷️ Market, then put it on in the Stable)' : '') : 'Ready to go!'}</span>`}
+      </div>
+      <div class="keys">Jump: <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> or tap the picture</div>
+    </div>
+    ${ride ? '' : `<h3>Choose a horse</h3>${riders.length ? `<div class="mini">${riders.map(x => {
+      const w = canRide(x);
+      return `<div class="mcard ${x.id===state.rideSel?'sel':''}" data-act="rideSel" data-id="${x.id}">
+        ${horseImg(look(x), 3)}<span class="nm">${esc(x.name)}</span>
+        <span style="font-size:12px;color:var(--muted)">⚡${x.speed} ❤️${x.stamina} 🕊️${x.temper}${x.best ? ` · best ${x.best} m` : ''}</span>
+        <span class="rd ${w?'':'ok'}">${w || 'Ready ✓'}</span></div>`;
+    }).join('')}</div>` : '<p class="empty">No grown-up horses yet!</p>'}`}`;
+}
+
+/* ---------- game loop ---------- */
+function tick(){
+  const t = now(), sec = Math.max(0, (t - state.last) / 1000);
+  state.last = t;
+  let changed = false;
+  for (const h of state.horses) decay(h, sec);
+  changed = dayRules(t, sec) || changed;
+  for (const h of [...state.horses]){
+    if (h.adultAt && t >= h.adultAt){ h.adultAt = 0; toast(`🎉 ${h.name} is all grown up!`, 'good'); changed = true; }
+    if (h.preg && t >= h.preg.due){
+      if (state.horses.length >= state.cap){
+        if (!h.preg.warned){ h.preg.warned = true; toast(`${h.name}'s foal is ready, but the stable is full! Build more stalls in the 🏷️ Market.`); }
+        continue;
+      }
+      const f = h.preg.foal, sire = h.preg.sire;
+      const baby = makeHorse({...f, adultAt: t + T.grow*1000, hunger: 80, happy: 85});
+      state.horses.push(baby); h.preg = null; h.restUntil = t + T.rest*1000;
+      discover(baby);
+      nameModal(baby, 'A foal is born! 🎉', `${esc(h.name)} and ${esc(sire)} had a <b>${fullName(phen(baby.genes))}</b> ${baby.sex==='F'?'filly':'colt'}! What will you name it?`);
+      changed = true;
+    }
+  }
+  let newlyReady = 0;
+  for (const p of state.plots) if (p.crop && !p.ready && t - p.at >= CROPS[p.crop].time*1000){ p.ready = true; newlyReady++; if (state.tab === 'farm') changed = true; }
+  if (newlyReady) toast(`🌾 ${newlyReady} field${newlyReady>1?'s are':' is'} ready to harvest!`, 'good');
+  for (const p of state.plots) if (!p.crop) delete p.ready;
+  if (t >= state.marketAt){ refreshMarket(); if (state.tab === 'market') changed = true; }
+  if (changed) render(); else updateLive();
+  save();
+}
+let lastHour = null;
+function dayRules(t, sec){
+  const c = clock(t), P = state.player;
+  let changed = false;
+  // a new day begins: everyone wakes up in the barn
+  if (c.idx !== state.day){
+    state.day = c.idx;
+    state.weather = rollWeather();
+    for (const h of state.horses) h.out = false;
+    P.leading = null; changed = true;
+    if (c.hour < MORNING_END){
+      const W = WEATHER[state.weather], need = RUG_KINDS[W.needs].name.toLowerCase();
+      if (state.stableHand){ turnOutAll(); toast(`${W.icon} Good morning! Day ${c.day}, ${W.name.toLowerCase()} today. Your stable hand put ${need}s on and took the horses out.`, 'good'); }
+      else toast(`${W.icon} Good morning! Day ${c.day}. It's ${W.name.toLowerCase()} today, so put a ${need} on each horse and take them to the paddock before 10:00!`, 'gold');
+    }
+  }
+  // 10:00 — anyone still inside gets sad
+  if (lastHour !== null && lastHour < MORNING_END && c.hour >= MORNING_END){
+    const sad = state.horses.filter(h => !h.out && P.leading !== h.id);
+    for (const h of sad) h.happy = clamp(h.happy - 20, 0, 100);
+    if (sad.length) toast(`😢 ${sad.map(h => h.name).join(', ')} didn't get to go out this morning and ${sad.length > 1 ? 'are' : 'is'} sad.`);
+    else if (state.horses.length) toast('🌳 Great job! Every horse made it to the paddock this morning!', 'good');
+    changed = true;
+  }
+  // 21:00 — night falls, everyone comes back in
+  if (c.hour >= NIGHT && (outCount() || P.leading)){
+    for (const h of state.horses) h.out = false;
+    P.leading = null; changed = true;
+    toast('🌙 Night falls. Your horses walked back into their stalls to sleep.');
+  }
+  // while playing: grazing makes horses happy, being stuck inside makes them sad
+  if (sec < 5){
+    for (const h of state.horses){
+      if (h.out && rugOK(h)){ h.happy = clamp(h.happy + .09*sec, 0, 100); h.hunger = clamp(h.hunger + .04*sec, 0, 100); }
+      else if (h.out){ h.happy = clamp(h.happy - .08*sec, 0, 100); h.hunger = clamp(h.hunger + .04*sec, 0, 100); }
+      else if (c.hour >= MORNING_END && c.hour < NIGHT && P.leading !== h.id) h.happy = clamp(h.happy - .06*sec, 0, 100);
+    }
+  }
+  lastHour = c.hour;
+  return changed;
+}
+function turnOutAll(){
+  for (const h of state.horses){ h.out = true; placeInPaddock(h); }
+  // the stable hand also dresses everyone for the weather, if you own enough rugs
+  const need = WEATHER[state.weather || 'sunny'].needs;
+  for (const h of state.horses){
+    if (rugOK(h)) continue;
+    const used = new Set(state.horses.map(x => x.rug));
+    const r = state.rugs.find(r => r.kind === need && !used.has(r.id));
+    h.rug = r ? r.id : null;
+  }
+  state.player.leading = null;
+}
+function save(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){} }
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (s && s.v === 1){
+      // older saves: add the new stable things
+      s.decor = s.decor || [{id:0,type:'hayBale',x:14,y:4}];
+      s.saddles = s.saddles || [{id:0,type:'brown'}];
+      s.player = s.player || {x:2, y:5, dir:'down', carry:null};
+      s.player.map = s.player.map || 'barn';
+      s.seed = s.seed || 'hay';
+      if (!s.dayEpoch){ s.dayEpoch = Date.now(); s.day = 0; }
+      if (s.player.leading === undefined) s.player.leading = null;
+      s.weather = s.weather || 'sunny';
+      s.rugs = s.rugs || [{id:1, kind:'fly', color:'white'}, {id:2, kind:'rain', color:'navy'}];
+      return s;
+    }
+  } catch(e){}
+  return null;
+}
+
+state = load();
+if (!state) newGame();
+tick();
+render();
+if (state.intro) showModal(`<div class="mpic">${horseImg(look(state.horses[0]||{genes:randomGenes()}),6,'bob')}</div>
+  <h2>Welcome to Clover Hill Stables!</h2>
+  <p>🚪 Walk out of the barn to your fields.<br>🌾 Plant hay, oats and carrots, and harvest them when they've grown.<br>🐴 Feed and brush your horses to keep them happy.<br>🌅 Every morning, lead your horses to the paddock before 10:00!<br>💞 Breed them to get foals with new colors.<br>📖 Find all ${BOOK.length} coats for your Horse Book!</p>
+  <p><b>Tip:</b> Daisy and Sunny can already have a foal. Try the 💞 Breeding tab!</p>
+  <button class="primary" data-act="start">Let's go!</button>`);
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
