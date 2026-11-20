@@ -35,8 +35,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Collect the game files
-        run: mkdir _site && cp -r index.html css js _site/
+      - uses: jdx/mise-action@v2
+      # game files go into v/<commit>/ so browsers never mix cached old files with new ones
+      - name: Build the site
+        run: node scripts/build-site.mjs "${GITHUB_SHA::7}" _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -136,7 +136,12 @@ If `scripts/capture-save.mjs` stops working because modules were renamed, update
 
 - Commit or push only when the user asks. Remote is HTTPS (`gh auth setup-git`); SSH push does not work here.
 - `.github/workflows/pages.yml` runs the tests on every push/PR. On `main`, if the tests pass,
-  it publishes `index.html`, `css/` and `js/` to GitHub Pages. If the tests fail, nothing is published.
+  it builds the site with `scripts/build-site.mjs` and publishes it. If the tests fail, nothing is published.
+- **Cache-busting:** browsers cache files for up to 10 minutes, so a player could get a new `index.html`
+  with old cached JavaScript (this once crashed the live game). The build puts `css/` and `js/` into
+  `v/<commit>/` and points `index.html` there. Keep every JS import relative (`'./x.js'`); the build and
+  `tests/build-site.test.js` check this. Never add files that `index.html` loads from outside that folder
+  without adding them to the build.
 - **After every push, watch the workflow until it is green** so the user is never surprised that
   their update did not go live:
   ```
