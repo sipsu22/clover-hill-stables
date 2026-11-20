@@ -230,6 +230,11 @@ footer{max-width:1100px;margin:0 auto;padding:10px 16px 40px;color:var(--muted);
   .dpad button{font-size:20px;border-radius:12px}
   .actbtn{width:84px;height:84px;font-size:26px}
   .keys{display:none}
+  .daybanner{height:calc(2.5em + 10px);line-height:1.25;padding:5px 8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;box-sizing:border-box}
+  .scene-ui .hint{height:2.6em;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .ridehud{height:24px;overflow:hidden;flex-wrap:nowrap;white-space:nowrap}
+  #toasts{top:calc(env(safe-area-inset-top) + 44px);bottom:auto}
+  .toast{font-size:13px;padding:8px 12px}
   .seedbar{padding:0 4px}
   .seedbar b{width:100%;text-align:center}
   .ridectl{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 6px;margin-top:10px}
@@ -1256,7 +1261,7 @@ function toast(msg, kind=''){
   const el = document.createElement('div'); el.className = 'toast ' + kind; el.textContent = msg;
   $('#toasts').appendChild(el);
   setTimeout(() => el.remove(), 3200);
-  while ($('#toasts').children.length > 4) $('#toasts').firstChild.remove();
+  while ($('#toasts').children.length > (isNarrow() ? 2 : 4)) $('#toasts').firstChild.remove();
 }
 function pop(emoji, src){
   const r = src ? src.getBoundingClientRect() : {left:innerWidth/2, top:innerHeight/2, width:0};
@@ -2123,7 +2128,7 @@ function updatePlayer(dt){
     if (pl.t >= 1){ pl.moving = false; P.x = pl.tx; P.y = pl.ty; }
   }
   if (!pl.moving){
-    const dir = held[held.length-1] || pl.tap; pl.tap = null;
+    const dir = heldDir() || pl.tap; pl.tap = null;
     if (dir){
       pl.path = []; pl.after = null; P.dir = dir;
       const [dx,dy] = DIRS[dir];
@@ -2593,21 +2598,26 @@ function drawFarm(g, time){
 
 let lastFrame = performance.now();
 function dayBanner(){
+  const b = dayBannerFull();
+  return isNarrow() && b.short ? {...b, text: b.short} : b;
+}
+function dayBannerFull(){
   const c = clock(), total = state.horses.length, out = outCount(), inside = total - out;
   const left = (MORNING_END - c.hour) / 18 * DAY_MS / 1000;
-  if (c.hour >= NIGHT) return {kind:'night', text:`🌙 Night time — your horses are asleep in the barn. A new day starts at 6:00.`};
+  if (c.hour >= NIGHT) return {kind:'night', text:`🌙 Night time — your horses are asleep in the barn. A new day starts at 6:00.`, short:`🌙 Night: horses are asleep. New day at 6:00.`};
   if (!total) return {kind:'', text:`${clockText(c.hour)} · Buy a horse at the 🏷️ Market!`};
   const W0 = WEATHER[state.weather || 'sunny'], bad0 = state.horses.filter(h => h.out && !rugOK(h)).length;
   if (c.hour < MORNING_END){
-    if (!inside && bad0) return {kind:'sad', text:`${W0.icon} It's ${W0.name.toLowerCase()}! ${bad0} horse${bad0>1?'s':''} in the paddock need${bad0>1?'':'s'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}. Put one on from the horse cards below.`};
-    if (!inside) return {kind:'good', text:`🌅 Good morning! All ${total} horses are out in the paddock. 🌳`};
+    if (!inside && bad0) return {kind:'sad', text:`${W0.icon} It's ${W0.name.toLowerCase()}! ${bad0} horse${bad0>1?'s':''} in the paddock need${bad0>1?'':'s'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}. Put one on from the horse cards below.`, short:`${W0.icon} ${bad0} horse${bad0>1?'s need':' needs'} a ${RUG_KINDS[W0.needs].name.toLowerCase()}!`};
+    if (!inside) return {kind:'good', text:`🌅 Good morning! All ${total} horses are out in the paddock. 🌳`, short:`🌅 All ${total} horses are out in the paddock! 🌳`};
     const W = WEATHER[state.weather || 'sunny'];
-    return {kind:'morning', text:`🌅 Morning! ${W.icon} ${W.name} today, so use ${RUG_KINDS[W.needs].name.toLowerCase()}s. Take your horses to the paddock before ${clockText(MORNING_END)} (${fmt(left)} left): ${out} of ${total} out. Lead them past the fields to the right →`};
+    return {kind:'morning', text:`🌅 Morning! ${W.icon} ${W.name} today, so use ${RUG_KINDS[W.needs].name.toLowerCase()}s. Take your horses to the paddock before ${clockText(MORNING_END)} (${fmt(left)} left): ${out} of ${total} out. Lead them past the fields to the right →`,
+      short:`🌅 ${W.icon} Paddock before ${clockText(MORNING_END)} · ${fmt(left)} left · ${out}/${total} out · use ${RUG_KINDS[W.needs].name.toLowerCase()}s`};
   }
-  if (inside) return {kind:'sad', text:`😢 ${inside} horse${inside>1?'s are':' is'} stuck inside and getting sad. Take ${inside>1?'them':'it'} to the paddock!`};
+  if (inside) return {kind:'sad', text:`😢 ${inside} horse${inside>1?'s are':' is'} stuck inside and getting sad. Take ${inside>1?'them':'it'} to the paddock!`, short:`😢 ${inside} horse${inside>1?'s':''} stuck inside, getting sad!`};
   const W = WEATHER[state.weather || 'sunny'], bad = state.horses.filter(h => h.out && !rugOK(h)).length;
-  if (bad) return {kind:'sad', text:`${W.icon} It's ${W.name.toLowerCase()}! ${bad} horse${bad>1?'s':''} in the paddock need${bad>1?'':'s'} a ${RUG_KINDS[W.needs].name.toLowerCase()}. Put one on from the horse cards below.`};
-  return {kind:'good', text:`☀️ ${clockText(c.hour)} · All your horses are happily grazing in the paddock. 🌳`};
+  if (bad) return {kind:'sad', text:`${W.icon} It's ${W.name.toLowerCase()}! ${bad} horse${bad>1?'s':''} in the paddock need${bad>1?'':'s'} a ${RUG_KINDS[W.needs].name.toLowerCase()}. Put one on from the horse cards below.`, short:`${W.icon} ${bad} horse${bad>1?'s need':' needs'} a ${RUG_KINDS[W.needs].name.toLowerCase()}!`};
+  return {kind:'good', text:`☀️ ${clockText(c.hour)} · All your horses are happily grazing in the paddock. 🌳`, short:`☀️ All horses are grazing happily. 🌳`};
 }
 function frame(time){
   const dt = Math.min(.1, (time - lastFrame) / 1000); lastFrame = time;
@@ -2668,23 +2678,34 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('canvas, bu
 let wasNarrow = isNarrow();
 addEventListener('resize', () => { if (isNarrow() !== wasNarrow){ wasNarrow = isNarrow(); render(); } });
 let sprintPointer = null;   // which finger is holding Sprint
-document.addEventListener('pointerdown', e => { if (e.target.closest('#sprintBtn')){ e.preventDefault(); sprintHeld = true; sprintPointer = e.pointerId; } });
+document.addEventListener('pointerdown', e => { const b = e.target.closest('#sprintBtn'); if (b){ e.preventDefault(); try { b.releasePointerCapture(e.pointerId); } catch(_){} sprintHeld = true; sprintPointer = e.pointerId; } });
 ['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, e => { if (e.pointerId === sprintPointer){ sprintHeld = false; sprintPointer = null; } }));
 document.addEventListener('keyup', e => {
   const dir = KEY_DIR[e.key];
   if (dir){ const i = held.indexOf(dir); if (i >= 0) held.splice(i, 1); }
 });
-window.addEventListener('blur', () => held.length = 0);
-let padDir = null, padPointer = null;   // direction held on the on-screen arrows, and by which finger
+/* On-screen arrows: every finger is remembered on its own (finger id -> direction).
+   The arrows live in a separate list from keyboard keys, so one can never leave the other stuck. */
+const padPointers = new Map();
+const heldDir = () => padPointers.size ? [...padPointers.values()].pop() : held[held.length-1];
+function releaseAllInput(){ held.length = 0; padPointers.clear(); sprintHeld = false; }
+window.addEventListener('blur', releaseAllInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAllInput(); });
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('[data-dir]'); if (!b) return;
-  e.preventDefault(); padDir = b.dataset.dir; padPointer = e.pointerId; held.push(padDir); pl.tap = padDir;
+  e.preventDefault();
+  // touch screens "capture" the finger to the button; if the screen redraws, that button
+  // disappears and the release could get lost, so let go of the capture right away
+  try { b.releasePointerCapture(e.pointerId); } catch(_){}
+  padPointers.set(e.pointerId, b.dataset.dir); pl.tap = b.dataset.dir;
 });
-['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, e => {
-  if (!padDir || e.pointerId !== padPointer) return;
-  const i = held.lastIndexOf(padDir); if (i >= 0) held.splice(i, 1);
-  padDir = null;
-}));
+// slide your thumb from one arrow to another
+document.addEventListener('pointermove', e => {
+  if (!padPointers.has(e.pointerId)) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY), b = el && el.closest('[data-dir]');
+  if (b) padPointers.set(e.pointerId, b.dataset.dir);
+});
+['pointerup','pointercancel'].forEach(ev => document.addEventListener(ev, e => { padPointers.delete(e.pointerId); }));
 
 /* =========================================================
    RIDING — four ways to ride
