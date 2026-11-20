@@ -1,0 +1,425 @@
+{
+  "_captured": {
+    "from": "333729b",
+    "at": "2026-11-20T18:51:32.321Z",
+    "steps": [
+      "✓ close welcome",
+      "✓ buy red saddle",
+      "✓ saddle Sunny",
+      "✓ buy fleece rug",
+      "✓ fly sheet on Daisy",
+      "✓ buy barn cat",
+      "✓ buy feed bundle",
+      "✓ DNA test Sunny",
+      "✓ plant crops",
+      "✓ breed Daisy × Sunny",
+      "✓ Daisy in the paddock",
+      "· hire stable hand (not in this version)",
+      "✓ win a trophy",
+      "✓ walk to the paddock",
+      "✓ tick",
+      "✓ save"
+    ]
+  },
+  "save": {
+    "v": 1,
+    "coins": 2505,
+    "inv": {
+      "hay": 32,
+      "carrot": 14,
+      "oats": 14
+    },
+    "plots": [
+      {
+        "crop": "carrot",
+        "at": 1795200687305
+      },
+      {
+        "crop": "hay",
+        "at": 1795199692306,
+        "ready": true
+      },
+      {
+        "crop": null,
+        "at": 0
+      },
+      {
+        "crop": null,
+        "at": 0
+      }
+    ],
+    "cap": 4,
+    "horses": [
+      {
+        "id": 1,
+        "name": "Daisy",
+        "sex": "F",
+        "genes": {
+          "E": [
+            1,
+            0
+          ],
+          "A": [
+            1,
+            0
+          ],
+          "Cr": [
+            0,
+            0
+          ],
+          "D": [
+            0,
+            0
+          ],
+          "G": [
+            0,
+            0
+          ],
+          "TO": [
+            1,
+            0
+          ],
+          "LP": [
+            0,
+            0
+          ]
+        },
+        "speed": 40,
+        "stamina": 35,
+        "temper": 50,
+        "hunger": 89.99408,
+        "happy": 90.00799199999999,
+        "adultAt": 0,
+        "preg": {
+          "due": 1795200737305,
+          "sire": "Sunny",
+          "warned": false,
+          "foal": {
+            "genes": {
+              "E": [
+                1,
+                0
+              ],
+              "A": [
+                0,
+                1
+              ],
+              "Cr": [
+                0,
+                1
+              ],
+              "D": [
+                0,
+                0
+              ],
+              "G": [
+                0,
+                0
+              ],
+              "TO": [
+                1,
+                0
+              ],
+              "LP": [
+                0,
+                0
+              ]
+            },
+            "sex": "M",
+            "speed": 32,
+            "stamina": 50,
+            "temper": 39,
+            "face": "none",
+            "socks": 1
+          }
+        },
+        "restUntil": 0,
+        "brushAt": 0,
+        "face": "blaze",
+        "socks": 1,
+        "tested": false,
+        "seed": 178970593,
+        "rug": 1,
+        "out": true
+      },
+      {
+        "id": 2,
+        "name": "Sunny",
+        "sex": "M",
+        "genes": {
+          "E": [
+            0,
+            0
+          ],
+          "A": [
+            1,
+            0
+          ],
+          "Cr": [
+            1,
+            0
+          ],
+          "D": [
+            0,
+            0
+          ],
+          "G": [
+            0,
+            0
+          ],
+          "TO": [
+            0,
+            0
+          ],
+          "LP": [
+            0,
+            0
+          ]
+        },
+        "speed": 35,
+        "stamina": 45,
+        "temper": 40,
+        "hunger": 89.98816,
+        "happy": 89.994672,
+        "adultAt": 0,
+        "preg": null,
+        "restUntil": 1795200722305,
+        "brushAt": 0,
+        "face": "star",
+        "socks": 2,
+        "tested": true,
+        "seed": 780255616,
+        "saddle": 1795200692250
+      }
+    ],
+    "market": [
+      {
+        "id": 3,
+        "name": "Pippin",
+        "sex": "M",
+        "genes": {
+          "E": [
+            0,
+            0
+          ],
+          "A": [
+            0,
+            1
+          ],
+          "Cr": [
+            0,
+            0
+          ],
+          "D": [
+            1,
+            1
+          ],
+          "G": [
+            0,
+            0
+          ],
+          "TO": [
+            0,
+            0
+          ],
+          "LP": [
+            0,
+            0
+          ]
+        },
+        "speed": 52,
+        "stamina": 31,
+        "temper": 17,
+        "hunger": 90,
+        "happy": 70,
+        "adultAt": 0,
+        "preg": null,
+        "restUntil": 0,
+        "brushAt": 0,
+        "face": "blaze",
+        "socks": 1,
+        "tested": false,
+        "seed": 701288410
+      },
+      {
+        "id": 4,
+        "name": "Hazel",
+        "sex": "F",
+        "genes": {
+          "E": [
+            1,
+            1
+          ],
+          "A": [
+            0,
+            1
+          ],
+          "Cr": [
+            1,
+            0
+          ],
+          "D": [
+            0,
+            1
+          ],
+          "G": [
+            0,
+            0
+          ],
+          "TO": [
+            0,
+            0
+          ],
+          "LP": [
+            0,
+            0
+          ]
+        },
+        "speed": 30,
+        "stamina": 20,
+        "temper": 49,
+        "hunger": 90,
+        "happy": 70,
+        "adultAt": 0,
+        "preg": null,
+        "restUntil": 0,
+        "brushAt": 0,
+        "face": "blaze",
+        "socks": 1,
+        "tested": false,
+        "seed": 368920688
+      },
+      {
+        "id": 5,
+        "name": "Rusty",
+        "sex": "M",
+        "genes": {
+          "E": [
+            1,
+            0
+          ],
+          "A": [
+            0,
+            1
+          ],
+          "Cr": [
+            0,
+            0
+          ],
+          "D": [
+            0,
+            0
+          ],
+          "G": [
+            0,
+            0
+          ],
+          "TO": [
+            0,
+            0
+          ],
+          "LP": [
+            1,
+            0
+          ]
+        },
+        "speed": 50,
+        "stamina": 23,
+        "temper": 26,
+        "hunger": 90,
+        "happy": 70,
+        "adultAt": 0,
+        "preg": null,
+        "restUntil": 0,
+        "brushAt": 0,
+        "face": "none",
+        "socks": 1,
+        "tested": false,
+        "seed": 212579043
+      }
+    ],
+    "marketAt": 1795200872171,
+    "found": {
+      "Bay": true,
+      "Pinto": true,
+      "Palomino": true
+    },
+    "nextId": 6,
+    "last": 1795200692319,
+    "sel": {
+      "F": null,
+      "M": null
+    },
+    "tab": "stable",
+    "intro": false,
+    "decor": [
+      {
+        "id": 0,
+        "type": "hayBale",
+        "x": 14,
+        "y": 4
+      },
+      {
+        "id": 1795200692284,
+        "type": "cat",
+        "x": 1,
+        "y": 4
+      }
+    ],
+    "saddles": [
+      {
+        "id": 0,
+        "type": "brown"
+      },
+      {
+        "id": 1795200692250,
+        "type": "red"
+      }
+    ],
+    "player": {
+      "x": 6,
+      "y": 5,
+      "dir": "right",
+      "carry": null,
+      "map": "paddock",
+      "leading": null
+    },
+    "seed": "hay",
+    "dayEpoch": 1795200692171,
+    "day": 0,
+    "rideMode": "training",
+    "rideLevel": 0,
+    "trainFocus": "speed",
+    "unlocked": {
+      "jumping": 1,
+      "race": 0
+    },
+    "trophies": [
+      {
+        "mode": "jumping",
+        "lvl": 0,
+        "place": 1,
+        "horse": "Sunny",
+        "day": 1
+      }
+    ],
+    "weather": "sunny",
+    "rugs": [
+      {
+        "id": 1,
+        "kind": "fly",
+        "color": "white"
+      },
+      {
+        "id": 2,
+        "kind": "rain",
+        "color": "navy"
+      },
+      {
+        "id": 1795200692269,
+        "kind": "fleece",
+        "color": "pink"
+      }
+    ]
+  }
+}

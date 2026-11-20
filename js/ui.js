@@ -19,14 +19,24 @@ export function pop(emoji, src){
   document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
 }
 export const modalQueue = [];
-export function showModal(html, after){
-  if ($('#modal').classList.contains('on')){ modalQueue.push([html, after]); return; }
-  $('#mbox').classList.remove('wide');
+// a popup can redraw itself after every action (e.g. a market stall after you buy something)
+export let modalRefresh = null;
+/** Show a popup. `refresh` (optional) returns fresh HTML for it, or null to close it. */
+export function showModal(html, after, refresh){
+  if ($('#modal').classList.contains('on')){ modalQueue.push([html, after, refresh]); return; }
+  $('#mbox').className = 'mbox';
   $('#mbox').innerHTML = html; $('#modal').classList.add('on');
+  modalRefresh = refresh || null;
   if (after) after();
+}
+export function refreshModal(){
+  if (!modalRefresh || !$('#modal').classList.contains('on')) return;
+  const html = modalRefresh();
+  if (html === null) closeModal(); else $('#mbox').innerHTML = html;
 }
 export function closeModal(){
   setOpenHorse(null);
+  modalRefresh = null;
   $('#modal').classList.remove('on');
   const next = modalQueue.shift();
   if (next) showModal(...next);

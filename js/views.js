@@ -1,10 +1,11 @@
-// HTML for each tab: farm, storage, breeding, market, horse book.
+// What you see: the top bar, the world (or a ride), horse cards and small popups.
 import { $, clamp, esc, fmt, now } from './util.js';
-import { cropImg, horseImg, itemImg, saddleImg } from './sprites.js';
-import { fullName, odds, phen } from './genetics.js';
-import { BOOK, BREED_COST, BUNDLES, CROPS, DNA_COST, MORNING_END, NIGHT, REFRESH_COST, RUG_COLORS, RUG_KINDS, SADDLES, SHOP, WEATHER, bundlePrice, bundleWorth, clock, clockText, isDaytime, rugSwatch } from './data.js';
-import { byId, decorBonus, isFoal, look, marketPrice, mood, plotCost, readiness, sexWord, stableCost, state, status, value } from './state.js';
-import { bar, closeModal, genesHTML, showModal, statBar } from './ui.js';
+import { cropImg, horseImg, saddleImg } from './sprites.js';
+import { fullName, phen } from './genetics.js';
+import { BOOK, CROPS, DNA_COST, MORNING_END, NIGHT, RUG_COLORS, RUG_KINDS, SADDLES, WEATHER, clock, clockText, isDaytime, rugSwatch } from './data.js';
+import { byId, isFoal, look, mood, readiness, sexWord, stableCost, state, status, value } from './state.js';
+import { bestFriends, heartsFor } from './affinity.js';
+import { bar, genesHTML, refreshModal, showModal, statBar } from './ui.js';
 import { COLS, ROWS, TILE, curMap } from './world.js';
 import { ride, rideView } from './riding.js';
 
@@ -16,12 +17,9 @@ export function hud(){
   const found = BOOK.filter(([k]) => state.found[k]).length;
   return `${clockChip}<span class="chip">🪙 ${state.coins}</span>
     <span class="chip">🌿 ${state.inv.hay}</span><span class="chip">🥕 ${state.inv.carrot}</span><span class="chip">🌾 ${state.inv.oats}</span>
+    ${state.inv.potion ? `<span class="chip" title="Love potions">🧪 ${state.inv.potion}</span>` : ''}
     <span class="chip">🐴 ${state.horses.length}/${state.cap}</span><span class="chip">📖 ${found}/${BOOK.length}</span>`;
 }
-export const TABS = [['stable','🏡 Farm'],['farm','🧺 Storage'],['breed','💞 Breeding'],['ride','🏇 Riding'],['market','🏷️ Market'],['book','📖 Horse Book']];
-export function tabsHTML(){ return TABS.map(([k,l]) => { const i = l.indexOf(' '), icon = l.slice(0, i), name = l.slice(i + 1);
-  return `<button class="${state.tab===k?'on':''}" data-act="tab" data-arg="${k}"><span class="ti">${icon}</span> <span class="tn">${name}</span></button>`; }).join(''); }
-
 export const isNarrow = () => innerWidth < 600;
 export const sceneVW = () => isNarrow() ? 11 * TILE : COLS * TILE;   // phones see 11 x 11 tiles, bigger
 export const sceneBuf = document.createElement('canvas');
@@ -67,7 +65,7 @@ export function stableView(){
   if (!state.horses.length) return sceneHTML() + `<div class="panel empty">Your stable is empty! Visit the 🏷️ Market to buy a horse.</div>`;
   return sceneHTML() + `<h2 class="pix">All your horses</h2><div class="grid">${state.horses.map(h => hcardHTML(h)).join('')}</div>`;
 }
-export function hcardHTML(h, atStall = false){
+export function hcardHTML(h, where = null){   // where: 'stall' | 'paddock' (shows the Lead button)
     const ph = phen(h.genes), foal = isFoal(h);
     return `<div class="hcard">
       <div class="pasture">
@@ -84,6 +82,7 @@ export function hcardHTML(h, atStall = false){
         <div class="row"><span class="lbl">Speed</span>${statBar(h.speed)}<b>${h.speed}</b></div>
         <div class="row"><span class="lbl">Stamina</span>${statBar(h.stamina)}<b>${h.stamina}</b></div>
         <div class="row"><span class="lbl">Gentle</span>${statBar(h.temper)}<b>${h.temper}</b></div>
+        ${friendsRow(h)}
         ${saddleRow(h)}
         ${rugRow(h)}
         ${h.tested ? genesHTML(h) : ''}
@@ -93,7 +92,7 @@ export function hcardHTML(h, atStall = false){
           <button data-act="feed" data-id="${h.id}" data-arg="oats">🌾 Oats</button>
           <button data-act="feed" data-id="${h.id}" data-arg="carrot">🥕 Carrot</button>
           <button data-act="brush" data-id="${h.id}">✨ Brush</button>
-          ${atStall && !h.out && state.player.leading !== h.id && isDaytime() ? `<button class="primary" data-act="lead" data-id="${h.id}">🌳 Lead to paddock</button>` : ''}
+          ${where && state.player.leading !== h.id && isDaytime() ? `<button class="primary" data-act="lead" data-id="${h.id}">🐴 Lead ${h.sex === 'F' ? 'her' : 'him'}</button>` : ''}
           ${h.tested ? '' : `<button data-act="dna" data-id="${h.id}">🧬 DNA test (${state.dnaFree ? 'free' : DNA_COST + '🪙'})</button>`}
           <button class="danger" data-act="sell" data-id="${h.id}">Sell ${value(h)}🪙</button>
         </div>
@@ -101,150 +100,22 @@ export function hcardHTML(h, atStall = false){
 }
 export let openHorse = null;
 export function setOpenHorse(id){ openHorse = id; }
-export function horseModalHTML(h){
-  return `<button class="closex" data-act="closeModal">✕</button>${hcardHTML(h, true)}`;
+export function horseModalHTML(h, where = 'stall'){
+  return `<button class="closex" data-act="closeModal">✕</button>${hcardHTML(h, where)}`;
 }
-export function horseModal(id){
+export function horseModal(id, where = 'stall'){
   const h = byId(id); if (!h) return;
-  showModal(horseModalHTML(h), () => { setOpenHorse(id); $('#mbox').classList.add('wide'); });
+  showModal(horseModalHTML(h, where), () => { setOpenHorse(id); $('#mbox').classList.add('wide'); },
+    () => byId(id) ? horseModalHTML(byId(id), where) : null);
+}
+export function friendsRow(h){
+  const f = bestFriends(h);
+  return `<div class="row"><span class="lbl">Friends</span><span>${f.length ? f.map(([x, v]) => `${esc(x.name)} <b class="hearts">${heartsFor(v)}</b>`).join(' · ') : '<span style="color:var(--muted)">Spend time together in the paddock!</span>'}</span></div>`;
 }
 
-export function farmView(){
-  const ready = state.plots.filter(p => p.crop && now() - p.at >= CROPS[p.crop].time*1000).length;
-  const growing = state.plots.filter(p => p.crop).length - ready;
-  return `<div class="panel roompanel"><div><h2>🌱 Your fields</h2>
-      <p>Your fields are outside! Go to the 🏡 Farm tab and walk out the barn door to plant and harvest.
-      You have <b>${state.plots.length}</b> field${state.plots.length>1?'s':''}: <b>${ready}</b> ready to harvest, <b>${growing}</b> growing.</p></div>
-      <button class="primary" data-act="goFields" style="font-size:16px;padding:10px 16px">🚪 Go to the fields</button></div>
-    <div class="panel"><h2>🧺 Storage</h2><p>Your food storage. Horses eat 🌿 hay, 🌾 oats and 🥕 carrots. Sell what you don't need.</p><div class="inv">
-      ${Object.entries(CROPS).map(([k,c]) => `<div class="invi">${cropImg(k,40)}<span class="n">${state.inv[k]}</span>
-        <button data-act="sellCrop" data-arg="${k}:1" ${state.inv[k]<1?'disabled':''}>Sell 1 (${c.sell}🪙)</button>
-        <button data-act="sellCrop" data-arg="${k}:all" ${state.inv[k]<1?'disabled':''}>All</button></div>`).join('')}
-    </div></div>
-    <div class="panel"><h2>Upgrades</h2><div class="ups">
-      ${state.plots.length < 12 ? `<button class="primary" data-act="buyPlot">➕ New field (${plotCost()}🪙)</button>` : '<span>All fields bought!</span>'}
-      ${state.cap < 16 ? `<button class="primary" data-act="upgradeStable">🏠 +2 stable stalls (${stableCost()}🪙)</button>` : '<span>Stable is max size!</span>'}
-    </div></div>`;
-}
-
-export function miniCard(h, selected){
-  const r = readiness(h);
-  return `<div class="mcard ${selected?'sel':''}" data-act="select" data-id="${h.id}">
-    ${horseImg(look(h), 3)}<span class="nm">${esc(h.name)}</span>
-    <span style="font-size:12px;color:var(--muted)">${fullName(phen(h.genes))}</span>
-    <span class="rd ${r?'':'ok'}" data-live="ready" data-id="${h.id}">${r || 'Ready ✓'}</span></div>`;
-}
-export function breedView(){
-  const mares = state.horses.filter(h => h.sex==='F'), studs = state.horses.filter(h => h.sex==='M');
-  const m = byId(state.sel.F), s = byId(state.sel.M);
-  const slot = (h, label) => h ? `<div class="slot full">${horseImg(look(h),4)}<b>${esc(h.name)}</b><small>${fullName(phen(h.genes))}</small></div>`
-                                : `<div class="slot">${label}</div>`;
-  let oddsHTML = '';
-  if (m && s){
-    if (m.tested && s.tested){
-      oddsHTML = `<h3 class="center">Possible foals</h3><div class="odds">${odds(m, s).map(([n, o]) => {
-        const isNew = !state.found[o.ph.color] || (o.ph.pinto && !state.found.Pinto) || (o.ph.appy && !state.found.Appaloosa);
-        const pc = o.p*100;
-        return `<div class="odd">${horseImg({...o.ph, face:'none', socks:0, seed:3}, 1.25)} ${n} ${isNew?'<span class="new">NEW!</span>':''}<span class="p">${pc<1?'<1':Math.round(pc)}%</span></div>`;
-      }).join('')}</div>`;
-    } else {
-      const need = [m, s].filter(h => !h.tested);
-      oddsHTML = `<p class="center">🧬 DNA-test both parents to see which colors their foal could be!</p>
-        <p class="center">${need.map(h => `<button data-act="dna" data-id="${h.id}">Test ${esc(h.name)} (${state.dnaFree ? 'free' : DNA_COST + '🪙'})</button>`).join(' ')}</p>`;
-    }
-  }
-  return `<div class="panel"><h2>Breeding barn</h2>
-      <p>Pick one mare and one stallion. They must be grown up, fed and happy. The foal gets one copy of each gene from each parent, and its stats can turn out better than its parents' stats!</p>
-      <div class="pair">${slot(m,'Pick a mare ♀ below')}<span class="heart">💞</span>${slot(s,'Pick a stallion ♂ below')}</div>
-      ${oddsHTML}
-      <p class="center"><button class="primary" data-act="breed" ${m&&s?'':'disabled'}>Breed! (${BREED_COST}🪙)</button></p>
-    </div>
-    <h3>Mares ♀</h3>${mares.length ? `<div class="mini">${mares.map(h => miniCard(h, h.id===state.sel.F)).join('')}</div>` : '<p class="empty">No mares yet.</p>'}
-    <h3>Stallions ♂</h3>${studs.length ? `<div class="mini">${studs.map(h => miniCard(h, h.id===state.sel.M)).join('')}</div>` : '<p class="empty">No stallions yet.</p>'}`;
-}
-
-export function bundleContents(b){
-  const parts = [];
-  for (const [k, n] of Object.entries(b.items || {})) parts.push(`<span class="bpart">${cropImg(k, 24)}×${n}</span>`);
-  for (const d of b.decor || []) parts.push(`<span class="bpart">${itemImg(d, 2)}</span>`);
-  if (b.saddle) parts.push(`<span class="bpart">${saddleImg(b.saddle, 2)}</span>`);
-  if (b.dna) parts.push(`<span class="bpart">🧬×${b.dna}</span>`);
-  for (const [k, c] of b.rugs || []) parts.push(`<span class="bpart">${RUG_KINDS[k].icon}${rugSwatch(k, c)}</span>`);
-  if (b.stalls) parts.push(`<span class="bpart">🏠 +${b.stalls} stalls</span>`);
-  return parts.join('');
-}
-export function roomPanel(){
-  const full = state.horses.length >= state.cap;
-  return `<div class="panel roompanel ${full ? 'full' : ''}">
-    <div><h2>🏠 More room for horses</h2>
-    <p>Your stable has <b>${state.horses.length} horse${state.horses.length===1?'':'s'}</b> in <b>${state.cap} stalls</b>.
-    ${full ? '<b>It\'s full!</b> Build more stalls so you can keep everyone, buy new horses and welcome foals.' : 'Build more stalls so you never have to sell a horse you love.'}</p></div>
-    ${state.cap < 16 ? `<button class="primary" data-act="upgradeStable" style="font-size:16px;padding:10px 16px">Build 2 more stalls (${stableCost()}🪙)</button>`
-                     : '<b>Your stable is the biggest it can be! (16 stalls)</b>'}
-  </div>`;
-}
-export function marketView(){
-  return roomPanel() + `<div class="panel"><h2>Horse market</h2>
-    <p>New horses arrive in <b data-live="market">${fmt((state.marketAt-now())/1000)}</b>. Their genes are a mystery until you DNA-test them!</p>
-    <p><button data-act="refresh">🔄 New horses now (${REFRESH_COST}🪙)</button></p></div>
-    <div class="grid">${state.market.map((h, i) => {
-      const ph = phen(h.genes);
-      const isNew = !state.found[ph.color] || (ph.pinto && !state.found.Pinto) || (ph.appy && !state.found.Appaloosa);
-      return `<div class="hcard"><div class="pasture">${isNew?'<span class="badge">📖 New color!</span>':''}${horseImg(look(h),5,'bob')}</div>
-        <div class="hbody">
-          <div class="hname pix">${esc(h.name)} <span class="sex ${h.sex}">${h.sex==='F'?'♀':'♂'}</span></div>
-          <div class="hcolor">${fullName(ph)} ${sexWord(h)}</div>
-          <div class="row"><span class="lbl">Speed</span>${statBar(h.speed)}<b>${h.speed}</b></div>
-          <div class="row"><span class="lbl">Stamina</span>${statBar(h.stamina)}<b>${h.stamina}</b></div>
-          <div class="row"><span class="lbl">Gentle</span>${statBar(h.temper)}<b>${h.temper}</b></div>
-          <div class="btns"><button class="gold" data-act="buy" data-id="${i}">Buy for ${marketPrice(h)}🪙</button></div>
-        </div></div>`;
-    }).join('') || '<div class="panel empty">Sold out! New horses are coming soon.</div>'}</div>
-    <div class="panel" style="margin-top:16px"><h2>🎁 Bundles</h2>
-      <p>Get several things together for a lower price!${state.dnaFree ? ` You have <b>${state.dnaFree} free DNA test${state.dnaFree>1?'s':''}</b>.` : ''}</p></div>
-    <div class="shop bundles">${BUNDLES.map(b => {
-      if (b.stalls && state.cap + b.stalls > 16) return '';
-      const worth = bundleWorth(b), price = bundlePrice(b);
-      return `<div class="sitem bundle"><span class="save">Save ${worth - price}🪙</span>
-        <span class="sn">${b.name}</span><div class="bparts">${bundleContents(b)}</div>
-        <span class="sd">${b.desc}</span>
-        <span class="was">Worth ${worth}🪙</span>
-        <button class="gold" data-act="buyBundle" data-arg="${b.id}">Buy ${price}🪙</button></div>`;
-    }).join('')}</div>
-    <div class="panel" style="margin-top:16px"><h2>🛒 Stable shop</h2>
-      <p>Decorations go into your stable aisle. Walk up to one and press <kbd>E</kbd> to pick it up and move it.
-      Every decoration makes your horses' happiness drop a little slower! (Now: <b>${Math.round(decorBonus()*100)}% slower</b>)</p></div>
-    <div class="shop">${Object.entries(SHOP).map(([k, it]) => {
-      const n = state.decor.filter(d => d.type === k).length + (state.player.carry && state.player.carry.type === k ? 1 : 0);
-      return `<div class="sitem"><div class="sicon">${itemImg(k, 4)}</div><span class="sn">${it.name}</span><span class="sd">${it.desc}</span>
-        ${n ? `<span class="own">You have ${n}</span>` : ''}
-        <button class="gold" data-act="buyItem" data-arg="${k}">Buy ${it.price}🪙</button></div>`;
-    }).join('')}</div>
-    <div class="panel" style="margin-top:16px"><h2>🧥 Horse rugs</h2>
-      <p>Horses in the paddock need the right rug for the weather: ☀️ sunny → 🪰 fly sheet, 🌧️ rain → ☔ rain sheet, ❄️ snow → 🧣 fleece rug.
-      Today it's <b>${WEATHER[state.weather||'sunny'].icon} ${WEATHER[state.weather||'sunny'].name.toLowerCase()}</b>.</p></div>
-    <div class="shop">${Object.entries(RUG_COLORS).flatMap(([kind, cols]) => Object.entries(cols).map(([color, c]) => {
-      const n = state.rugs.filter(r => r.kind === kind && r.color === color).length;
-      return `<div class="sitem"><span class="sn">${RUG_KINDS[kind].icon} ${c.name} ${RUG_KINDS[kind].name.toLowerCase()}</span>
-        ${horseImg({color:'Bay', face:'blaze', socks:1, seed:4, rug:{kind, color}}, 3)}
-        <span class="sd">${RUG_KINDS[kind].desc}</span>
-        ${n ? `<span class="own">You have ${n}</span>` : ''}
-        <button class="gold" data-act="buyRug" data-arg="${kind}:${color}">Buy ${RUG_KINDS[kind].price}🪙</button></div>`;
-    })).join('')}</div>
-    <div class="panel" style="margin-top:16px"><h2>🐎 Tack shop: saddles</h2>
-      <p>Saddles hang on your stable wall. Put one on a grown-up horse from its card in the Stable, or walk up to its stall and press <kbd>E</kbd>.</p></div>
-    <div class="shop">${Object.entries(SADDLES).map(([k, s]) => {
-      const n = state.saddles.filter(x => x.type === k).length;
-      return `<div class="sitem"><div class="sicon">${saddleImg(k, 4)}</div><span class="sn">${s.name}</span>
-        ${horseImg({color:'Chestnut', face:'none', socks:0, seed:3, saddle:k}, 2)}
-        ${n ? `<span class="own">You have ${n}</span>` : ''}
-        <button class="gold" data-act="buySaddle" data-arg="${k}">Buy ${s.price}🪙</button></div>`;
-    }).join('')}</div>`;
-}
-
-export function bookView(){
+export function bookHTML(){
   const found = BOOK.filter(([k]) => state.found[k]).length;
-  return `<div class="panel"><h2>Horse Book</h2><p>Collect every coat color and pattern! Each new discovery gives you 50 🪙.</p>
+  return `<button class="closex" data-act="closeModal">✕</button><div class="panel"><h2>📖 Horse Book</h2><p>Collect every coat color and pattern! Each new discovery gives you 50 🪙.</p>
     <div class="prog"><i style="width:${found/BOOK.length*100}%"></i></div><b>${found} / ${BOOK.length} found</b>
     ${found === BOOK.length ? '<p>🏆 <b>You found every horse! You are a master breeder!</b></p>' : ''}</div>
     <div class="book">${BOOK.map(([k, hint]) => {
@@ -255,16 +126,24 @@ export function bookView(){
     }).join('')}</div>`;
 }
 
-export const VIEWS = {stable:stableView, farm:farmView, breed:breedView, ride:() => rideView(), market:marketView, book:bookView};
+export function openBook(){
+  showModal(bookHTML(), () => $('#mbox').classList.add('menu'), bookHTML);
+}
+/** At a locked stall in the barn: build two more stalls. */
+export function buildHTML(){
+  const full = state.horses.length >= state.cap;
+  return `<button class="closex" data-act="closeModal">✕</button><h2>🔨 Build more stalls</h2>
+    <p>Your stable has <b>${state.horses.length} horse${state.horses.length === 1 ? '' : 's'}</b> in <b>${state.cap} stalls</b>.${full ? ' <b>It\'s full!</b>' : ''}</p>
+    ${state.cap < 16 ? `<p class="center"><button class="primary" data-act="upgradeStable" style="font-size:16px;padding:10px 16px">Build 2 more stalls (${stableCost()}🪙)</button></p>`
+                     : '<p><b>Your stable is the biggest it can be! (16 stalls)</b></p>'}`;
+}
+export function openBuild(){ showModal(buildHTML(), null, () => state.cap >= 16 ? null : buildHTML()); }
+
 export function render(){
   $('#hud').innerHTML = hud();
-  $('#tabs').innerHTML = tabsHTML();
-  $('#view').innerHTML = VIEWS[state.tab]();
+  $('#view').innerHTML = ride ? rideView() : sceneHTML();
   document.body.classList.toggle('riding', !!ride);
-  if (openHorse !== null){
-    const h = byId(openHorse);
-    if (h) $('#mbox').innerHTML = horseModalHTML(h); else closeModal();
-  }
+  refreshModal();
 }
 export function updateLive(){
   const t = now();
@@ -281,7 +160,7 @@ export function updateLive(){
       const p = state.plots[id]; if (!p || !p.crop) return; const c = CROPS[p.crop];
       if (k === 'plot') el.style.width = clamp((t-p.at)/(c.time*1000),0,1)*100 + '%';
       else el.textContent = fmt(c.time - (t-p.at)/1000);
-    } else if (k === 'market') el.textContent = fmt((state.marketAt - t)/1000);
+    }
   });
 }
 

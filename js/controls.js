@@ -4,8 +4,9 @@ import { CROPS, DAY_MS, MORNING_END, NIGHT, RUG_KINDS, WEATHER, clock, clockText
 import { state } from './state.js';
 import { isNarrow, render, sceneBuf } from './views.js';
 import { COLS, ROWS, TILE, clickScene, curMap, held, hintText, interact, pl, updatePlayer } from './world.js';
+import { updateCeremony } from './breeding.js';
 import { drawScene } from './world-draw.js';
-import { RH, RW, drawRide, ride, rideBuf, rideHUD, rideJump, setSprint, startRide, updateRide } from './riding.js';
+import { RH, RW, drawRide, ride, rideBuf, rideHUD, rideJump, setSprint, updateRide } from './riding.js';
 
 export let lastFrame = performance.now();
 export let camX = 0;          // left edge of the phone camera, in world pixels
@@ -35,8 +36,8 @@ export function dayBannerFull(){
 export function frame(time){
   const dt = Math.min(.1, (time - lastFrame) / 1000); lastFrame = time;
   const rc = document.getElementById('ride');
-  if (rc && state.tab === 'ride'){
-    if (!rc.dataset.bound){ rc.dataset.bound = 1; rc.addEventListener('pointerdown', e => { e.preventDefault(); ride ? rideJump() : startRide(); }); }
+  if (rc && ride){
+    if (!rc.dataset.bound){ rc.dataset.bound = 1; rc.addEventListener('pointerdown', e => { e.preventDefault(); if (ride) rideJump(); }); }
     if (!$('#modal').classList.contains('on')) updateRide(dt);
     const rcv = document.getElementById('ride');
     if (rcv){
@@ -48,7 +49,8 @@ export function frame(time){
     rideHUD();
   }
   const cv = document.getElementById('scene');
-  if (cv && state.tab === 'stable'){
+  if (cv && !ride){
+    if (curMap() === 'heart') updateCeremony(dt);
     if (!cv.dataset.bound){ cv.dataset.bound = 1; cv.addEventListener('pointerdown', clickScene); }
     if (!$('#modal').classList.contains('on')) updatePlayer(dt);
     if (sceneBuf.width !== COLS*TILE){ sceneBuf.width = COLS*TILE; sceneBuf.height = ROWS*TILE; }
@@ -67,7 +69,7 @@ export function frame(time){
 requestAnimationFrame(frame);
 
 export const KEY_DIR = {ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right'};
-export function sceneActive(e){ return state.tab === 'stable' && !$('#modal').classList.contains('on') && !(e.target.matches && e.target.matches('input,textarea')); }
+export function sceneActive(e){ return !ride && !$('#modal').classList.contains('on') && !(e.target.matches && e.target.matches('input,textarea')); }
 document.addEventListener('keydown', e => {
   if (!sceneActive(e)) return;
   const dir = KEY_DIR[e.key];
@@ -76,12 +78,12 @@ document.addEventListener('keydown', e => {
   if (curMap() === 'farm' && ['1','2','3'].includes(e.key)){ state.seed = Object.keys(CROPS)[+e.key - 1]; render(); }
 });
 document.addEventListener('keydown', e => {
-  if (state.tab !== 'ride' || $('#modal').classList.contains('on')) return;
+  if (!ride || $('#modal').classList.contains('on')) return;
   if (e.target.matches && e.target.matches('input,textarea')) return;
   if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)){
     e.preventDefault();
     if (e.repeat) return;
-    if (ride) rideJump(); else if (e.key === ' ') startRide();
+    rideJump();
   }
   if (['ArrowRight', 'd', 'D', 'Shift'].includes(e.key) && ride){ e.preventDefault(); setSprint(true); }
 });

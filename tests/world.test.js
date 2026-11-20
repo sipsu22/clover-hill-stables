@@ -158,6 +158,6 @@ describe('leading horses to the paddock (no teleporting!)', () => {
   it('the lead button only appears on the card opened at the stall', async () => {
     const { hcardHTML } = await import('../js/views.js');
     expect(hcardHTML(daisy())).not.toContain('data-act="lead"');
-    expect(hcardHTML(daisy(), true)).toContain('data-act="lead"');
+    expect(hcardHTML(daisy(), 'stall')).toContain('data-act="lead"');
   });
 });

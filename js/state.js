@@ -17,10 +17,10 @@ export function makeHorse(o={}){
   }, o);
 }
 export function newGame(){
-  state = {v:1, coins:150, inv:{hay:12,carrot:4,oats:4},
+  state = {v:1, coins:150, inv:{hay:12,carrot:4,oats:4,potion:1}, bonds:{},
     plots: Array.from({length:4}, () => ({crop:null, at:0})),
     cap:4, horses:[], market:[], marketAt:0, found:{}, nextId:1, last:now(),
-    sel:{F:null, M:null}, tab:'stable', intro:true,
+    tab:'stable', intro:true,
     decor:[{id:0,type:'hayBale',x:14,y:4}], saddles:[{id:0,type:'brown'}],
     player:{x:2, y:5, dir:'down', carry:null, map:'barn', leading:null}, seed:'hay',
     dayEpoch: now(), day: 0,
@@ -71,6 +71,7 @@ export function status(h){
   }
   if (isFoal(h)) return `🌱 Grows up in ${fmt((h.adultAt-t)/1000)}`;
   if (state.player.leading === h.id) return '🐴 Following you';
+  if (h.pen) return '💕 Waiting in the Heart Barn';
   if (h.out && !rugOK(h)){ const W = WEATHER[state.weather || 'sunny']; return `${W.badIcon} ${W.why}! I need a ${RUG_KINDS[W.needs].name.toLowerCase()}.`; }
   if (h.out) return '🌳 Out in the paddock';
   if (h.restUntil > t) return `💤 Resting ${fmt((h.restUntil-t)/1000)}`;

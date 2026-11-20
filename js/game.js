@@ -3,6 +3,7 @@ import { clamp, esc, now } from './util.js';
 import { fullName, phen } from './genetics.js';
 import { CROPS, MORNING_END, NIGHT, RUG_KINDS, SAVE_KEY, T, WEATHER, clock, clockText, outCount, rollWeather, rugOK } from './data.js';
 import { decay, discover, makeHorse, refreshMarket, state } from './state.js';
+import { updateBonds } from './affinity.js';
 import { nameModal, toast } from './ui.js';
 import { render, updateLive } from './views.js';
 
@@ -17,7 +18,7 @@ export function tick(){
     if (h.adultAt && t >= h.adultAt){ h.adultAt = 0; toast(`🎉 ${h.name} is all grown up!`, 'good'); changed = true; }
     if (h.preg && t >= h.preg.due){
       if (state.horses.length >= state.cap){
-        if (!h.preg.warned){ h.preg.warned = true; toast(`${h.name}'s foal is ready, but the stable is full! Build more stalls in the 🏷️ Market.`); }
+        if (!h.preg.warned){ h.preg.warned = true; toast(`${h.name}'s foal is ready, but the stable is full! Build more stalls: press E at a locked stall in the barn.`); }
         continue;
       }
       const f = h.preg.foal, sire = h.preg.sire;
@@ -29,10 +30,10 @@ export function tick(){
     }
   }
   let newlyReady = 0;
-  for (const p of state.plots) if (p.crop && !p.ready && t - p.at >= CROPS[p.crop].time*1000){ p.ready = true; newlyReady++; if (state.tab === 'farm') changed = true; }
+  for (const p of state.plots) if (p.crop && !p.ready && t - p.at >= CROPS[p.crop].time*1000){ p.ready = true; newlyReady++; }
   if (newlyReady) toast(`🌾 ${newlyReady} field${newlyReady>1?'s are':' is'} ready to harvest!`, 'good');
   for (const p of state.plots) if (!p.crop) delete p.ready;
-  if (t >= state.marketAt){ refreshMarket(); if (state.tab === 'market') changed = true; }
+  if (sec < 5) updateBonds(sec);          // friendships grow while you play
   if (changed) render(); else updateLive();
   save();
 }
@@ -44,7 +45,8 @@ export function dayRules(t, sec){
   if (c.idx !== state.day){
     state.day = c.idx;
     state.weather = rollWeather();
-    for (const h of state.horses) h.out = false;
+    refreshMarket();                       // new horses at the dealer every morning
+    for (const h of state.horses){ h.out = false; delete h.pen; }
     P.leading = null; changed = true;
     if (c.hour < MORNING_END){
       const W = WEATHER[state.weather], need = RUG_KINDS[W.needs].name.toLowerCase();
@@ -60,8 +62,8 @@ export function dayRules(t, sec){
     changed = true;
   }
   // 21:00 — night falls, everyone comes back in
-  if (c.hour >= NIGHT && (outCount() || P.leading)){
-    for (const h of state.horses) h.out = false;
+  if (c.hour >= NIGHT && (outCount() || P.leading || state.horses.some(h => h.pen))){
+    for (const h of state.horses){ h.out = false; delete h.pen; }
     P.leading = null; changed = true;
     toast('🌙 Night falls. Your horses walked back into their stalls to sleep.');
   }
@@ -93,6 +95,15 @@ export function load(){
       s.unlocked = s.unlocked || {jumping:0, race:0}; s.trophies = s.trophies || [];
       if (s.stableHand){ s.coins += 500; delete s.stableHand; s.handRefund = true; }
       s.rugs = s.rugs || [{id:1, kind:'fly', color:'white'}, {id:2, kind:'rain', color:'navy'}];
+      // the tab bar is gone: breeding uses love potions now, so give older farms one to try
+      if (s.inv && s.inv.potion === undefined) s.inv.potion = 1;
+      s.bonds = s.bonds || {};
+      s.tab = 'stable'; delete s.sel;
+      // the Horse Book stand stands at (15,7) in the barn: move any decoration that was there
+      for (const d of s.decor || []) if (d.x === 15 && d.y === 7){
+        const taken = (x, y) => s.decor.some(o => o !== d && o.x === x && o.y === y) || (x === 15 && y === 7) || x === 0;
+        for (let y = 4; y <= 7 && d.x === 15 && d.y === 7; y++) for (let x = 14; x >= 1; x--) if (!taken(x, y)){ d.x = x; d.y = y; break; }
+      }
       return s;
     }
   } catch(e){}

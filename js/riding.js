@@ -597,18 +597,10 @@ export function trophyShelf(){
   return `<div class="panel"><h2>🏆 Trophy shelf</h2><div class="trophies">${t.slice().reverse().map(x =>
     `<div class="trophy"><span class="tbig">${PLACE[x.place-1]}</span><b>${LEVELS[x.lvl].name}</b><span>${RIDE_MODES[x.mode].icon} ${RIDE_MODES[x.mode].name}</span><small>${esc(x.horse)} · Day ${x.day}</small></div>`).join('')}</div></div>`;
 }
+/** The ride itself (shown instead of the world while you ride). */
 export function rideView(){
   setRideSize();
-  const riders = state.horses.filter(h => !isFoal(h));
-  if (!state.rideSel || !byId(state.rideSel) || isFoal(byId(state.rideSel))){
-    const first = riders.find(h => !canRide(h)) || riders[0];
-    state.rideSel = first ? first.id : null;
-  }
-  const mode = state.rideMode || 'training', M = RIDE_MODES[mode], lvl = state.rideLevel || 0;
-  const unlocked = (state.unlocked || {})[mode] || 0;
-  const h = byId(state.rideSel), why = canRide(h);
-  if (ride){
-    return `<div class="panel scene-wrap">
+  return `<div class="panel scene-wrap">
       <div class="ridehud" id="rideHud"></div>
       <canvas id="ride" width="${rideVW()}" height="${RH}"></canvas>
       <div class="scene-ui ridectl">
@@ -618,7 +610,13 @@ export function rideView(){
       </div>
       <div class="keys">Jump: <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> or tap the picture${ride.mode === 'race' ? ' · Sprint: hold <kbd>→</kbd> <kbd>D</kbd> or <kbd>Shift</kbd>' : ''}${ride.mode === 'trail' ? " · Don't jump under low branches!" : ''}</div>
     </div>`;
-  }
+}
+
+/** The menu you get at the arena gate, for the horse you led there. */
+export function rideMenuHTML(){
+  const mode = state.rideMode || 'training', M = RIDE_MODES[mode], lvl = state.rideLevel || 0;
+  const unlocked = (state.unlocked || {})[mode] || 0;
+  const h = byId(state.rideSel), why = canRide(h);
   let options = '';
   if (mode === 'training'){
     options = `<div class="optrow"><b>Train:</b> ${Object.entries(TRAIN_FOCUS).map(([k, l]) =>
@@ -633,28 +631,23 @@ export function rideView(){
         <span>🎟️ Entry: <b>${L.fee} 🪙</b></span>
         <span>🏅 Prizes: 🥇 ${L.prizes[0]} · 🥈 ${L.prizes[1]} · 🥉 ${L.prizes[2]}</span>
         <span>🤺 Rivals' rating: ${L.ai[0]}–${L.ai[1]}</span>
-        ${h ? `<span class="chance ${cls}">Your horse: ${horseRating(h)} → ${chance}</span>` : ''}
+        ${h ? `<span class="chance ${cls}">${esc(h.name)}: ${horseRating(h)} → ${chance}</span>` : ''}
       </div>
       <p class="center" style="font-size:13px">Each horse can enter one competition per day. Top 3 unlocks the next level.</p>`;
   }
-  return `<div class="panel"><h2>🏇 Riding</h2>
-      <div class="modes">${Object.entries(RIDE_MODES).map(([k, x]) =>
-        `<button class="modecard ${k===mode?'on':''}" data-act="rideMode" data-arg="${k}"><span class="micon">${x.icon}</span><b>${x.name}</b>${x.comp ? '<small>Competition</small>' : '<small>Practice</small>'}</button>`).join('')}</div>
-      <p>${M.desc}</p>${options}</div>
-    <div class="panel scene-wrap">
-      <canvas id="ride" width="${rideVW()}" height="${RH}"></canvas>
-      <div class="scene-ui">
-        <button class="primary" data-act="startRide" ${why ? 'disabled' : ''} style="font-size:18px;padding:10px 22px">${M.icon} ${M.comp ? 'Enter' : 'Start'}${h ? ' with ' + esc(h.name) : ''}${M.comp ? ` (${LEVELS[lvl].fee}🪙)` : ''}</button>
-        <span class="hint">${why ? '⚠️ ' + why + (why === 'Needs a saddle' ? ' (buy one at the 🏷️ Market, then put it on from the horse card)' : '') : 'Ready to go!'}</span>
-      </div>
-    </div>
-    <h3>Choose a horse</h3>${riders.length ? `<div class="mini">${riders.map(x => {
-      const w = canRide(x);
-      return `<div class="mcard ${x.id===state.rideSel?'sel':''}" data-act="rideSel" data-id="${x.id}">
-        ${horseImg(look(x), 3)}<span class="nm">${esc(x.name)}</span>
-        <span style="font-size:12px;color:var(--muted)">⚡${x.speed} ❤️${x.stamina} 🕊️${x.temper} · ⭐ ${horseRating(x)}</span>
-        <span class="rd ${w?'':'ok'}">${w || 'Ready ✓'}</span></div>`;
-    }).join('')}</div>` : '<p class="empty">No grown-up horses yet!</p>'}
+  return `<button class="closex" data-act="closeModal">✕</button><h2>🏇 Riding arena</h2>
+    ${h ? `<div class="riderline">${horseImg(look(h), 3)}<span><b>${esc(h.name)}</b><br><small>⚡${h.speed} ❤️${h.stamina} 🕊️${h.temper} · ⭐ ${horseRating(h)}</small></span></div>` : ''}
+    <div class="modes">${Object.entries(RIDE_MODES).map(([k, x]) =>
+      `<button class="modecard ${k===mode?'on':''}" data-act="rideMode" data-arg="${k}"><span class="micon">${x.icon}</span><b>${x.name}</b>${x.comp ? '<small>Competition</small>' : '<small>Practice</small>'}</button>`).join('')}</div>
+    <p>${M.desc}</p>${options}
+    <p class="center"><button class="primary" data-act="startRide" ${why ? 'disabled' : ''} style="font-size:18px;padding:10px 22px">${M.icon} ${M.comp ? 'Enter' : 'Start'}${M.comp ? ` (${LEVELS[lvl].fee}🪙)` : ''}</button></p>
+    ${why ? `<p class="center sd">⚠️ ${why}${why === 'Needs a saddle' ? ' (buy one at the market, then put it on from the horse card)' : ''}</p>` : ''}
     ${trophyShelf()}`;
 }
-
+/** At the arena gate: ride the horse you brought. */
+export function openRidingMenu(led){
+  if (!led) return toast('🏇 Lead a saddled horse here to ride!');
+  if (isFoal(led)) return toast(`${led.name} is too young to ride.`);
+  state.rideSel = led.id;
+  showModal(rideMenuHTML(), () => $('#mbox').classList.add('menu'), rideMenuHTML);
+}

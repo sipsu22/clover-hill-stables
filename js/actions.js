@@ -1,12 +1,13 @@
 // Everything a button can do (ACT) and the click/keyboard dispatch.
-import { $, clamp, esc, fmt, now, pick, randi } from './util.js';
+import { $, clamp, esc, fmt, now } from './util.js';
 import { horseImg } from './sprites.js';
-import { inherit } from './genetics.js';
-import { BREED_COST, BUNDLES, CROPS, DNA_COST, FOOD, REFRESH_COST, RUG_COLORS, RUG_KINDS, SADDLES, SAVE_KEY, SHOP, T, bundlePrice, isDaytime, rugOK } from './data.js';
-import { byId, discover, isFoal, look, marketPrice, newGame, plotCost, readiness, refreshMarket, saddleOf, stableCost, state, value } from './state.js';
+import { BUNDLES, CROPS, DNA_COST, FOOD, RUG_COLORS, RUG_KINDS, SADDLES, SAVE_KEY, SHOP, T, isDaytime, rugOK } from './data.js';
+import { byId, discover, isFoal, look, newGame, plotCost, saddleOf, stableCost, state, value } from './state.js';
 import { closeModal, nameModal, pop, showModal, toast } from './ui.js';
+import { priceOf } from './shop.js';
 import { openHorse, render } from './views.js';
-import { curMap, facing, freeSpot, goTo, interact, resetLeadPos, stallAt } from './world.js';
+import { curMap, facing, freeSpot, horseNear, interact, resetLeadPos, stallAt } from './world.js';
+import { startCeremony } from './breeding.js';
 import { RIDE_MODES, clearRide, endRide, ride, rideJump, startRide } from './riding.js';
 import { save } from './game.js';
 
@@ -16,11 +17,9 @@ export function spend(n){
   state.coins -= n; return true;
 }
 export const ACT = {
-  tab(_, arg){ if (ride && arg !== 'ride') endRide(true); state.tab = arg; render(); scrollTo(0,0); },
-  startRide(){ startRide(); if (ride) scrollTo(0, 0); },
+  startRide(){ startRide(); if (ride){ closeModal(); render(); scrollTo(0, 0); } },
   jump(_, __, b){ if (b && b.dataset.fired){ delete b.dataset.fired; return; } rideJump(); },
   quitRide(){ endRide(true); },
-  rideSel(id){ state.rideSel = id; render(); },
   rideMode(_, m){
     state.rideMode = m;
     if (RIDE_MODES[m].comp) state.rideLevel = Math.min(state.rideLevel || 0, (state.unlocked || {})[m] || 0);
@@ -28,28 +27,30 @@ export const ACT = {
   },
   rideLevel(_, l){ state.rideLevel = +l; render(); },
   trainFocus(_, f){ state.trainFocus = f; render(); },
-  plant(i, crop, el){
-    const c = CROPS[crop]; if (!spend(c.seed)) return;
-    state.plots[i] = {crop, at: now()}; pop('🌱', el); render();
-  },
-  harvest(i, _, el){
-    const p = state.plots[i]; if (!p.crop || now()-p.at < CROPS[p.crop].time*1000) return;
-    state.inv[p.crop] += CROPS[p.crop].yield; pop('+' + CROPS[p.crop].yield, el);
-    state.plots[i] = {crop:null, at:0}; render();
-  },
-  harvestAll(){
-    let n = 0;
-    state.plots.forEach((p, i) => { if (p.crop && now()-p.at >= CROPS[p.crop].time*1000){ state.inv[p.crop] += CROPS[p.crop].yield; state.plots[i] = {crop:null,at:0}; n++; } });
-    if (n) toast(`Harvested ${n} field${n>1?'s':''}!`, 'good'); render();
-  },
   sellCrop(_, arg, el){
     const [k, amt] = arg.split(':'); const n = amt === 'all' ? state.inv[k] : Math.min(1, state.inv[k]);
-    if (!n) return; state.inv[k] -= n; state.coins += n * CROPS[k].sell; pop('+' + n*CROPS[k].sell + '🪙', el); render();
+    if (!n) return;
+    const pay = n * priceOf.cropSell(k);
+    state.inv[k] -= n; state.coins += pay; pop('+' + pay + '🪙', el); render();
   },
+  buyFood(_, k, el){
+    if (!spend(priceOf.cropBuy(k))) return;
+    state.inv[k]++; pop('+1', el); render();
+  },
+  buyPotion(_, __, el){
+    if (!spend(priceOf.potion())) return;
+    state.inv.potion = (state.inv.potion || 0) + 1; pop('🧪', el);
+    toast('🧪 A love potion! Use it at the love table in the Heart Barn.', 'good'); render();
+  },
+  buyDNA(_, __, el){
+    if (!spend(priceOf.dna())) return;
+    state.dnaFree = (state.dnaFree || 0) + 1; pop('🧬', el);
+    toast('🧬 DNA test kit added. Use it from any horse card.', 'good'); render();
+  },
+  usePotion(){ startCeremony(); },
   buyPlot(){ if (state.plots.length < 12 && spend(plotCost())){ state.plots.push({crop:null,at:0}); toast('New field ready to plant!','good'); render(); } },
   buyPlotHere(){ closeModal(); ACT.buyPlot(); },
   seed(_, k){ state.seed = k; render(); },
-  goFields(){ state.tab = 'stable'; if (curMap() !== 'farm') goTo('farm'); else render(); scrollTo(0,0); },
   upgradeStable(){ if (spend(stableCost())){ state.cap += 2; toast('Your stable is bigger now! 🏠','good'); render(); } },
   feed(id, food, el){
     const h = byId(id), f = FOOD[food];
@@ -80,13 +81,12 @@ export const ACT = {
     const h = byId(id); closeModal(); if (!h) return;
     if (state.player.leading === id) state.player.leading = null;
     state.coins += value(h); state.horses = state.horses.filter(x => x !== h);
-    if (state.sel.F === id) state.sel.F = null; if (state.sel.M === id) state.sel.M = null;
     toast(`Sold ${h.name} for ${value(h)} 🪙. Goodbye, ${h.name}! 👋`); render();
   },
   buyItem(_, type){
     const spot = freeSpot();
     if (!spot){ toast('Your stable aisle is full! Sell... just kidding, move things around to make room.'); return; }
-    if (!spend(SHOP[type].price)) return;
+    if (!spend(priceOf.decor(type))) return;
     state.decor.push({id: Date.now(), type, x: spot[0], y: spot[1]});
     if (type === 'hayBale'){ state.inv.hay += 10; toast('Hay bale delivered to your stable! +10 🌿 hay', 'good'); }
     else toast(`${SHOP[type].name} delivered to your stable! 🏠`, 'good');
@@ -101,7 +101,7 @@ export const ACT = {
       const s = freeSpot(); if (!s){ spots.forEach(() => state.decor.pop()); return toast('Not enough room in your stable aisle for the decorations. Move some things around first!'); }
       const tmp = {id: Date.now() + spots.length, type: d, x: s[0], y: s[1]}; state.decor.push(tmp); spots.push(tmp);
     }
-    if (!spend(bundlePrice(b))){ spots.forEach(() => state.decor.pop()); return; }
+    if (!spend(priceOf.bundle(b))){ spots.forEach(() => state.decor.pop()); return; }
     for (const [k, n] of Object.entries(b.items || {})) state.inv[k] += n;
     if (spots.some(d => d.type === 'hayBale')) state.inv.hay += 10 * spots.filter(d => d.type === 'hayBale').length;
     if (b.saddle) state.saddles.push({id: Date.now(), type: b.saddle});
@@ -111,7 +111,7 @@ export const ACT = {
     toast(`🎁 ${b.name} unpacked! Enjoy!`, 'good'); render();
   },
   buySaddle(_, type){
-    if (!spend(SADDLES[type].price)) return;
+    if (!spend(priceOf.saddle(type))) return;
     state.saddles.push({id: Date.now(), type});
     toast(`New ${SADDLES[type].name} saddle! It's hanging on your stable wall.`, 'good'); render();
   },
@@ -128,7 +128,7 @@ export const ACT = {
   },
   buyRug(_, arg){
     const [kind, color] = arg.split(':');
-    if (!spend(RUG_KINDS[kind].price)) return;
+    if (!spend(priceOf.rug(kind, color))) return;
     state.rugs.push({id: Date.now(), kind, color});
     toast(`New ${RUG_COLORS[kind][color].name.toLowerCase()} ${RUG_KINDS[kind].name.toLowerCase()}! Put it on a horse from its card.`, 'good'); render();
   },
@@ -147,14 +147,17 @@ export const ACT = {
     if (!isDaytime()) return toast('🌙 It\'s night. The horses are sleeping!');
     if (P.carry) return toast('Put down what you are carrying first.');
     if (P.leading) return toast(`You're already leading ${byId(P.leading).name}. One horse at a time!`);
-    // no teleporting: you have to be standing at this horse's stall in the barn
+    // no teleporting: you must be standing at the horse's stall, or right next to it in the paddock
     const [fx, fy] = facing();
-    if (curMap() !== 'barn' || state.horses[stallAt(fx, fy)] !== h)
-      return toast(`Walk to ${h.name}'s stall in the barn to lead ${h.sex==='F'?'her':'him'} out.`);
+    const atStall = curMap() === 'barn' && state.horses[stallAt(fx, fy)] === h && !h.out && !h.pen;
+    const atPaddock = curMap() === 'paddock' && h.out && (horseNear(fx, fy) === h || horseNear(P.x, P.y) === h);
+    if (!atStall && !atPaddock)
+      return toast(`Walk to ${h.name} first: ${h.sex==='F'?'her':'his'} stall in the barn, or next to ${h.sex==='F'?'her':'him'} in the paddock.`);
     h.out = false; P.leading = id;
     if (openHorse !== null) closeModal();
     resetLeadPos();
-    toast(`🐴 ${h.name} is following you. Walk out of the barn, past the fields, to the paddock on the right!`, 'good');
+    toast(atStall ? `🐴 ${h.name} is following you. The paddock is past the fields →, the village is south ↓`
+                  : `🐴 ${h.name} is following you. Press E in the barn to put ${h.sex==='F'?'her':'him'} back in the stall.`, 'good');
     render();
   },
   rename(id){ const h = byId(id); if (openHorse !== null) closeModal(); nameModal(h, 'Rename horse', `Give ${esc(h.name)} a new name:`); },
@@ -164,34 +167,18 @@ export const ACT = {
     closeModal(); render();
   },
   closeModal(){ closeModal(); },
-  select(id){
-    const h = byId(id); const k = h.sex;
-    state.sel[k] = state.sel[k] === id ? null : id; render();
-  },
-  breed(){
-    const m = byId(state.sel.F), s = byId(state.sel.M);
-    if (!m || !s) return;
-    for (const h of [m, s]){ const r = readiness(h); if (r){ toast(`${h.name}: ${r}`); return; } }
-    if (!spend(BREED_COST)) return;
-    const stat = (a, b) => clamp(Math.round((a+b)/2 + randi(-6, 10)), 1, 100);
-    m.preg = {due: now() + T.pregnancy*1000, sire: s.name, warned:false, foal: {
-      genes: inherit(m, s), sex: pick(['F','M']),
-      speed: stat(m.speed, s.speed), stamina: stat(m.stamina, s.stamina), temper: stat(m.temper, s.temper),
-      face: pick([m.face, s.face, pick(['none','star','blaze'])]),
-      socks: clamp(pick([m.socks, s.socks]) + randi(-1,1), 0, 4),
-    }};
-    s.restUntil = now() + T.rest*1000;
-    state.sel = {F:null, M:null};
-    toast(`💞 ${m.name} is expecting a foal! It will be born in ${T.pregnancy} seconds.`, 'good'); render();
-  },
-  buy(i){
-    const h = state.market[i]; if (!h) return;
-    if (state.horses.length >= state.cap){ toast('Your stable is full! Build more stalls at the top of the 🏷️ Market.'); return; }
-    if (!spend(marketPrice(h))) return;
+  buyHorse(i){
+    const h = state.market[i], P = state.player; if (!h) return;
+    if (state.horses.length >= state.cap) return toast('Your stable is full! Build more stalls: press E at a locked stall in the barn.');
+    if (P.leading) return toast(`Your hands are full: you're leading ${byId(P.leading).name}. Take ${byId(P.leading).sex==='F'?'her':'him'} home first.`);
+    if (P.carry) return toast('Put down what you are carrying first.');
+    if (!spend(priceOf.horse(h))) return;
+    // no teleporting: your new horse follows you, and you lead it home to the barn
     state.market.splice(i, 1); state.horses.push(h); discover(h);
-    toast(`Welcome home, ${h.name}! 🐴`, 'good'); render();
+    P.leading = h.id; resetLeadPos();
+    closeModal();
+    toast(`🐴 ${h.name} is yours! Lead ${h.sex==='F'?'her':'him'} home: up the road to the farm, then into the barn.`, 'good'); render();
   },
-  refresh(){ if (spend(REFRESH_COST)){ refreshMarket(); render(); } },
   start(){ state.intro = false; closeModal(); },
   reset(){
     if (openHorse !== null) closeModal();

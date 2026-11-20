@@ -11,7 +11,9 @@ import * as S from '../js/state.js';
 import { load, save, tick, dayRules } from '../js/game.js';
 import { SAVE_KEY, WEATHER, CROPS, DAY_MS } from '../js/data.js';
 import { GENES, phen } from '../js/genetics.js';
-import { render, VIEWS } from '../js/views.js';
+import { render, openBook, openBuild, horseModal } from '../js/views.js';
+import { openStall, TOP_STALLS, BOTTOM_STALLS } from '../js/market-map.js';
+import { openTable } from '../js/breeding.js';
 import { ACT } from '../js/actions.js';
 import * as W from '../js/world.js';
 import * as R from '../js/riding.js';
@@ -52,6 +54,10 @@ function expectCurrentShape(s){
   expect(Array.isArray(s.trophies)).toBe(true);
   expect(s.seed in CROPS).toBe(true);
   expect(s.stableHand).toBeUndefined();          // removed feature: must be cleaned up
+  expect(typeof s.inv.potion).toBe('number');    // love potions (breeding in the Heart Barn)
+  expect(typeof s.bonds).toBe('object');         // friendships between horses
+  expect(s.sel).toBeUndefined();                 // old breeding-tab selection is gone
+  expect(s.decor.some(d => d.x === 15 && d.y === 7)).toBe(false);   // the Horse Book stand's tile is free
 }
 
 beforeEach(() => { localStorage.clear(); R.clearRide(); closeAllPopups(); });
@@ -70,14 +76,16 @@ describe.each(FIXTURES)('save from $file', ({save: original}) => {
     const s = loadSave(original);
     const refund = original.stableHand ? 500 : 0;
     expect(s.coins).toBe(original.coins + refund);
-    expect(s.inv).toEqual(original.inv);
+    expect(s.inv).toMatchObject(original.inv);
+    expect(s.inv.potion).toBe(original.inv.potion ?? 1);   // farms from before love potions get one to try
     expect(s.cap).toBe(original.cap);
     expect(s.plots).toEqual(original.plots);
     expect(s.found).toEqual(original.found);
     expect(s.horses.map(h => [h.id, h.name, h.sex, h.genes, h.speed, h.stamina, h.temper, h.saddle, h.rug ?? null]))
       .toEqual(original.horses.map(h => [h.id, h.name, h.sex, h.genes, h.speed, h.stamina, h.temper, h.saddle, h.rug ?? null]));
     expect(s.horses.map(h => phen(h.genes))).toEqual(original.horses.map(h => phen(h.genes)));
-    for (const k of ['decor', 'saddles', 'rugs', 'trophies', 'unlocked']) if (original[k] !== undefined) expect(s[k], k).toEqual(original[k]);
+    for (const k of ['saddles', 'rugs', 'trophies', 'unlocked']) if (original[k] !== undefined) expect(s[k], k).toEqual(original[k]);
+    if (original.decor) expect(s.decor.map(d => d.type).sort()).toEqual(original.decor.map(d => d.type).sort());   // same decorations (one may have moved off the book stand)
     const preg = original.horses.find(h => h.preg);
     if (preg) expect(s.horses.find(h => h.id === preg.id).preg).toEqual(preg.preg);
   });
@@ -106,13 +114,16 @@ describe.each(FIXTURES)('save from $file', ({save: original}) => {
     expect(load()).toEqual(clone(s));
   });
 
-  it('the game runs with it: ticks, every tab, every horse sprite', () => {
+  it('the game runs with it: ticks, every place, every popup, every horse sprite', () => {
     S.setState(loadSave(original));
     expect(() => tick()).not.toThrow();
-    for (const tab of Object.keys(VIEWS)){
-      S.state.tab = tab;
-      expect(() => render(), tab).not.toThrow();
+    for (const map of ['barn', 'farm', 'paddock', 'village', 'market', 'heart']){
+      S.state.player.map = map;
+      expect(() => render(), map).not.toThrow();
     }
+    const popups = [openBook, openBuild, openTable, () => horseModal(S.state.horses[0].id, 'stall'),
+      ...[...TOP_STALLS, ...BOTTOM_STALLS].map(([id]) => () => openStall(id))];
+    for (const open of popups){ expect(() => open()).not.toThrow(); closeAllPopups(); }
     for (const h of [...S.state.horses, ...S.state.market]) expect(() => horseCanvas(S.look(h))).not.toThrow();
   });
 
@@ -120,7 +131,7 @@ describe.each(FIXTURES)('save from $file', ({save: original}) => {
     S.setState(loadSave(original));
     const st = S.state;
     st.tab = 'stable'; st.intro = false;
-    for (const map of ['barn', 'farm', 'paddock']){ W.goTo(map); expect(st.player.map).toBe(map); W.interact(); }
+    for (const map of ['barn', 'farm', 'paddock', 'village', 'market', 'heart']){ W.goTo(map); expect(st.player.map).toBe(map); W.interact(); closeAllPopups(); }
     W.goTo('barn');
     const h = st.horses.find(x => !S.isFoal(x) && !x.preg);   // pregnant mares can't be ridden
     st.inv.hay = Math.max(1, st.inv.hay); h.hunger = 10;
@@ -152,6 +163,9 @@ describe('each piece an old save can be missing is filled in', () => {
     ['rugs',     s => delete s.rugs,           s => expect(s.rugs.length).toBe(2)],
     ['unlocked', s => delete s.unlocked,       s => expect(s.unlocked).toEqual({jumping: 0, race: 0})],
     ['trophies', s => delete s.trophies,       s => expect(s.trophies).toEqual([])],
+    ['inv.potion', s => delete s.inv.potion,   s => expect(s.inv.potion).toBe(1)],
+    ['bonds',    s => delete s.bonds,          s => expect(s.bonds).toEqual({})],
+    ['decor on the book stand tile', s => s.decor.push({id: 77, type: 'cat', x: 15, y: 7}), s => expect(s.decor.find(d => d.id === 77)).toMatchObject({type: 'cat'})],
   ];
   it.each(cases)('%s', (_, remove, check) => {
     const old = clone(base);

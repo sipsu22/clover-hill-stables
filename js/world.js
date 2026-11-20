@@ -1,23 +1,39 @@
 // The walkable world: barn, farm and paddock rules, movement, leading horses.
 import { $, clamp, fmt, now } from './util.js';
 import { cropImg } from './sprites.js';
-import { CROPS, RUG_KINDS, SHOP, WEATHER, isDaytime, rugOK } from './data.js';
+import { CROPS, RUG_KINDS, SHOP, WEATHER, rugOK } from './data.js';
 import { byId, plotCost, state } from './state.js';
 import { showModal, toast } from './ui.js';
-import { horseModal, hud, render } from './views.js';
+import { horseModal, hud, openBook, openBuild, render } from './views.js';
 import { camX, heldDir } from './controls.js';
+import { ride } from './riding.js';
 import { save } from './game.js';
 
+import * as Village from './village.js';
+import * as MarketMap from './market-map.js';
+import * as Heart from './breeding.js';
+
+// places that live in their own modules; each has walk, door, interact, hint, click and draw
+export const PLACES = {village: Village, market: MarketMap, heart: Heart};
+
 /* =========================================================
-   THE WORLD — two maps you can walk between (16 x 11 tiles, 16px each)
+   THE WORLD — places you walk between (16 x 11 tiles each, 16px per tile)
+
+     BARN ── door ── FARM ── east ── PADDOCK
+                      │ south (road at x 8-9)
+                    VILLAGE ── MARKET HALL (market-map.js)
+                            ── HEART BARN  (breeding.js)
+                            ── riding arena gate (riding menu)
 
    BARN (inside):                    FARM (outside):
      rows 0-1  back wall               barn building top-left (door at the bottom)
      rows 2-3  top stalls              fenced field with 12 plots in the middle
      rows 4-7  aisle (door on the      pond, trees and a scarecrow around it
-               left, rows 5-6)
+               left, rows 5-6;         road to the village at the bottom (x 8-9)
+               Horse Book stand at 15,7)
      rows 8-9  bottom stalls
      row 10    front wall
+   The village, market and heart barn live in their own modules and are plugged in via PLACES.
    ========================================================= */
 export const TILE = 16, COLS = 16, ROWS = 11, AISLE_TOP = 4, AISLE_BOT = 7;
 export const DIRS = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
@@ -31,7 +47,8 @@ export const GATE = [[8,6],[9,6]];
 export const POND = [[1,8],[2,8],[3,8],[1,9],[2,9],[3,9]];
 export const TREES = [[14,1],[15,4],[14,9],[6,10],[11,10]];
 export const SCARECROW = [12, 4];
-export const PATH = [[2,5],[2,6],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[12,7],[13,7],[14,7],[15,7]];
+export const PATH = [[2,5],[2,6],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[12,7],[13,7],[14,7],[15,7],[8,8],[9,8],[8,9],[9,9],[8,10],[9,10]];
+export const FARM_SOUTH_X = [8, 9];   // walk off the bottom edge here to reach the village
 export const FARM_EXIT_ROWS = [6, 7, 8];   // walk off the right edge here to reach the paddock
 export const pl = {px:2, py:5, moving:false, fx:0, fy:0, tx:0, ty:0, t:0, path:[], after:null, walkT:0, fade:0, fx2:[]};
 export const held = [];   // directions being held down, newest last
@@ -48,7 +65,9 @@ export function stallAt(x, y){
 export const decorAt = (x, y) => state.decor.find(d => d.x === x && d.y === y);
 export const inAisle = (x, y) => x >= 0 && x < COLS && y >= AISLE_TOP && y <= AISLE_BOT;
 export const isBarnDoorTile = (x, y) => x === 0 && BARN_DOOR_ROWS.includes(y);
-export const barnWalk = (x, y) => inAisle(x, y) && !decorAt(x, y);
+export const BOOK_TILE = [15, 7];      // the Horse Book stand in the barn aisle
+export const isBookTile = (x, y) => x === BOOK_TILE[0] && y === BOOK_TILE[1];
+export const barnWalk = (x, y) => inAisle(x, y) && !decorAt(x, y) && !isBookTile(x, y);
 
 /* ----- farm rules ----- */
 export function plotAt(x, y){
@@ -88,7 +107,7 @@ export function paddockWalk(x, y){
   if (has2(PADDOCK_TREES, x, y) || has2(TROUGH, x, y)) return false;
   return !isPaddockFence(x, y);
 }
-export const walkable = (x, y, map = curMap()) => map === 'barn' ? barnWalk(x, y) : map === 'farm' ? farmWalk(x, y) : paddockWalk(x, y);
+export const walkable = (x, y, map = curMap()) => PLACES[map] ? PLACES[map].walk(x, y) : map === 'barn' ? barnWalk(x, y) : map === 'farm' ? farmWalk(x, y) : paddockWalk(x, y);
 
 /* ----- horses wandering in the paddock (positions are not saved) ----- */
 export const pdk = {};
@@ -188,9 +207,10 @@ export function goTo(map, x, y, dir){
   P.map = map;
   if (map === 'farm'){ P.x = x ?? 2; P.y = y ?? 5; P.dir = dir || 'down'; }
   else if (map === 'paddock'){ P.x = x ?? 0; P.y = y ?? 7; P.dir = dir || 'right'; }
+  else if (PLACES[map]){ P.x = x ?? 0; P.y = y ?? 5; P.dir = dir || 'down'; }
   else {
-    P.x = 0; P.y = 5; P.dir = 'right';
-    const d = decorAt(0, 5);
+    P.x = x ?? 0; P.y = y ?? 5; P.dir = dir || 'right';
+    const d = decorAt(P.x, P.y);
     if (d){ const s = freeSpot(); if (s){ d.x = s[0]; d.y = s[1]; } }
   }
   pl.moving = false; pl.path = []; pl.after = null; pl.px = P.x; pl.py = P.y; pl.fade = 1; pl.fx2 = [];
@@ -204,6 +224,8 @@ export function tryDoor(nx, ny){
   if (m === 'farm' && isFarmDoor(nx, ny)){ goTo('barn'); return true; }
   if (m === 'farm' && nx >= COLS && FARM_EXIT_ROWS.includes(ny)){ goTo('paddock', 0, ny, 'right'); return true; }
   if (m === 'paddock' && nx < 0 && PADDOCK_ENTRY_ROWS.includes(ny)){ goTo('farm', COLS-1, ny, 'left'); return true; }
+  if (m === 'farm' && ny >= ROWS && FARM_SOUTH_X.includes(nx)){ goTo('village', nx, 0, 'down'); return true; }
+  if (PLACES[m]) return PLACES[m].door(nx, ny);
   return false;
 }
 
@@ -233,9 +255,10 @@ export function buyFieldModal(){
 }
 
 export function interact(){
-  if (state.tab !== 'stable' || pl.moving) return;
+  if (ride || pl.moving || Heart.blocked()) return;
   const P = state.player, [fx, fy] = facing();
   const led = P.leading ? byId(P.leading) : null;
+  if (PLACES[curMap()]) return PLACES[curMap()].interact(fx, fy, led);
   if (curMap() === 'paddock'){
     if (fx < 0 && PADDOCK_ENTRY_ROWS.includes(fy)) return goTo('farm', COLS-1, fy, 'left');
     if (led){
@@ -248,17 +271,13 @@ export function interact(){
       save(); render(); return;
     }
     const h = horseNear(fx, fy) || horseNear(P.x, P.y);
-    if (h){
-      if (!isDaytime()) return;
-      h.out = false; P.leading = h.id; resetLeadPos();
-      toast(`🐴 ${h.name} is following you. Press E in the barn to put ${h.sex==='F'?'her':'him'} back in the stall.`);
-      render(); return;
-    }
-    return toast('Walk up to a horse to lead it, or bring horses here from the barn!');
+    if (h) return horseModal(h.id, 'paddock');      // care for it here, or lead it away
+    return toast('Walk up to a horse to see it, or bring horses here from the barn!');
   }
   if (curMap() === 'farm'){
     if (isFarmDoor(fx, fy)) return goTo('barn');
     if (fx >= COLS && FARM_EXIT_ROWS.includes(fy)) return goTo('paddock', 0, fy, 'right');
+    if (fy >= ROWS && FARM_SOUTH_X.includes(fx)) return goTo('village', fx, 0, 'down');
     const i = plotAt(fx, fy);
     if (i >= 0){
       if (i >= state.plots.length) return buyFieldModal();
@@ -275,12 +294,14 @@ export function interact(){
     toast(`🐴 ${led.name} is back in ${led.sex==='F'?'her':'his'} stall.`);
     render(); return;
   }
+  if (isBookTile(fx, fy)) return openBook();
   const st = stallAt(fx, fy);
   if (st >= 0){
-    if (st >= state.cap) return toast('🔒 This stall is locked. Build more stalls in the 🏷️ Market!');
+    if (st >= state.cap) return openBuild();
     const h = state.horses[st];
-    if (!h) return toast('This stall is empty. Buy a horse at the 🏷️ Market!');
-    return horseModal(h.id);
+    if (!h) return toast('This stall is empty. Buy a horse at the market in the village!');
+    if (h.out || h.pen) return toast(`${h.name} is not here right now (${h.out ? 'in the paddock' : 'in the Heart Barn'}).`);
+    return horseModal(h.id, 'stall');
   }
   if (P.carry){
     if (!barnWalk(fx, fy) || isBarnDoorTile(fx, fy)) return toast("You can't put that there.");
@@ -299,18 +320,20 @@ export function interact(){
 export function hintText(){
   const P = state.player, [fx, fy] = facing();
   const led = P.leading ? byId(P.leading) : null;
+  if (PLACES[curMap()]) return PLACES[curMap()].hint(fx, fy, led);
   if (curMap() === 'paddock'){
     if (fx < 0 && PADDOCK_ENTRY_ROWS.includes(fy)) return '← Back to the fields';
     if (led) return inPaddock(P.x, P.y) ? `Press E to let ${led.name} run free! 🌳` : `Lead ${led.name} through the gate into the paddock`;
     const h = horseNear(fx, fy) || horseNear(P.x, P.y);
-    if (h) return isDaytime() ? `Press E to lead ${h.name}` : `${h.name} is sleepy`;
+    if (h) return `Press E to see ${h.name}`;
     const inside = state.horses.filter(x => !x.out).length;
     return inside ? `${inside} horse${inside>1?'s are':' is'} still in the barn` : '🌳 All your horses are out grazing!';
   }
   if (curMap() === 'farm'){
     if (isFarmDoor(fx, fy)) return led ? `Press E to take ${led.name} back into the barn` : 'Press E to go into the barn 🐴';
     if (fx >= COLS && FARM_EXIT_ROWS.includes(fy)) return 'Press E (or keep walking) to go to the paddock →';
-    if (led) return `${led.name} is following you. The paddock is to the right →`;
+    if (fy >= ROWS && FARM_SOUTH_X.includes(fx)) return 'Press E (or keep walking) to go to the village ↓';
+    if (led) return `${led.name} is following you. Paddock → · Village ↓`;
     const i = plotAt(fx, fy);
     if (i >= 0){
       if (i >= state.plots.length) return `Press E to buy this field (${plotCost()}🪙)`;
@@ -324,16 +347,17 @@ export function hintText(){
   }
   if (fx < 0 && BARN_DOOR_ROWS.includes(fy)) return led ? `Take ${led.name} outside — the paddock is past the fields` : 'Press E to go outside to the fields 🌾';
   if (led) return `${led.name} is following you. Walk out the door on the left, or press E to put ${led.sex==='F'?'her':'him'} back`;
+  if (isBookTile(fx, fy)) return 'Press E to read the Horse Book 📖';
   const st = stallAt(fx, fy);
   if (st >= 0){
-    if (st >= state.cap) return '🔒 Locked stall';
+    if (st >= state.cap) return '🔨 Press E to build more stalls';
     const h = state.horses[st];
-    return h ? `Press E to visit ${h.name}` : 'An empty stall';
+    return h ? (h.out || h.pen ? `${h.name}'s stall (${h.out ? 'in the paddock' : 'in the Heart Barn'})` : `Press E to visit ${h.name}`) : 'An empty stall';
   }
   if (P.carry) return barnWalk(fx, fy) ? `Press E to put down the ${SHOP[P.carry.type].name.toLowerCase()}` : `Carrying: ${SHOP[P.carry.type].name}`;
   const d = decorAt(fx, fy);
   if (d) return `Press E to pick up the ${SHOP[d.type].name.toLowerCase()}`;
-  return 'Visit your horses, or walk out the door on the left to the fields 🌾';
+  return 'Visit your horses, read the 📖 Horse Book, or walk out the door on the left 🌾';
 }
 export function startMove(nx, ny){
   const P = state.player;
@@ -352,7 +376,8 @@ export function updatePlayer(dt){
     pl.walkT += dt;
     if (pl.t >= 1){ pl.moving = false; P.x = pl.tx; P.y = pl.ty; }
   }
-  if (!pl.moving){
+  if (!pl.moving && Heart.blocked()){ pl.tap = null; pl.path = []; }
+  else if (!pl.moving){
     const dir = heldDir() || pl.tap; pl.tap = null;
     if (dir){
       pl.path = []; pl.after = null; P.dir = dir;
@@ -387,6 +412,8 @@ export function clickScene(e){
   const tx = Math.floor(((e.clientX - r.left) / r.width * cv.width + camX) / TILE);
   let ty = Math.floor((e.clientY - r.top) / r.height * ROWS);
   const P = state.player;
+  if (Heart.blocked()) return;
+  if (PLACES[curMap()]) return PLACES[curMap()].click(tx, ty);
   if (curMap() === 'paddock'){
     if (tx === 0 && PADDOCK_ENTRY_ROWS.includes(ty)) return walkAndUse([[0, ty, 'left']]);
     const h = horseNear(tx + .5, ty + .5);
@@ -396,12 +423,14 @@ export function clickScene(e){
   }
   if (curMap() === 'farm'){
     if (tx === COLS-1 && FARM_EXIT_ROWS.includes(ty)) return walkAndUse([[COLS-1, ty, 'right']]);
+    if (ty === ROWS-1 && FARM_SOUTH_X.includes(tx)) return walkAndUse([[tx, ROWS-1, 'down']]);
     if (tx <= 4 && ty <= 4) return walkAndUse(FARM_DOOR_X.map(x => [x, FARM_DOOR_Y + 1, 'up']));
     if (plotAt(tx, ty) >= 0) return walkAndUse(around(tx, ty));
     if (farmWalk(tx, ty)){ pl.path = bfs(P.x, P.y, (x,y) => x===tx && y===ty) || []; pl.after = null; }
     return;
   }
   if (isBarnDoorTile(tx, ty)) return walkAndUse([[0, ty, 'left']]);
+  if (isBookTile(tx, ty)) return walkAndUse(around(tx, ty));
   if (barnWalk(tx, ty)){ pl.path = bfs(P.x, P.y, (x,y) => x===tx && y===ty) || []; pl.after = null; return; }
   // clicked a stall or a decoration: walk next to it, face it, and use it
   if (ty === 2) ty = 3; if (ty === 9) ty = 8;

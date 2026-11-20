@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as S from '../js/state.js';
 import { ACT } from '../js/actions.js';
-import { SHOP, BUNDLES, bundlePrice, BREED_COST } from '../js/data.js';
+import { BUNDLES } from '../js/data.js';
+import { priceOf } from '../js/shop.js';
 import { freshGame } from './helpers.js';
 
 let st, daisy, sunny;
@@ -41,14 +42,14 @@ describe('shop', () => {
     ACT.buyItem(null, 'hayBale');
     expect(st.decor).toHaveLength(decor + 1);
     expect(st.inv.hay).toBe(22);
-    expect(st.coins).toBe(150 - SHOP.hayBale.price);
+    expect(st.coins).toBe(150 - priceOf.decor('hayBale'));
   });
 
   it('bundles add everything inside them', () => {
     const feed = BUNDLES.find(b => b.id === 'feed');
     ACT.buyBundle(null, 'feed');
-    expect(st.inv).toEqual({hay: 32, oats: 14, carrot: 14});
-    expect(st.coins).toBe(150 - bundlePrice(feed));
+    expect(st.inv).toMatchObject({hay: 32, oats: 14, carrot: 14});
+    expect(st.coins).toBe(150 - priceOf.bundle(feed));
   });
 
   it('nothing is bought without enough coins', () => {
@@ -85,7 +86,7 @@ describe('rugs and saddles', () => {
   });
 });
 
-describe('selling and breeding', () => {
+describe('selling', () => {
   it('selling asks first, then pays the horse’s value', () => {
     const worth = S.value(sunny);
     ACT.sell(2);
@@ -99,21 +100,5 @@ describe('selling and breeding', () => {
     daisy.preg = {due: Date.now() + 1e5};
     ACT.sell(1);
     expect(document.querySelector('#mbox [data-act=sellYes]')).toBeNull();
-  });
-
-  it('breeding costs coins and makes the mare pregnant', () => {
-    for (const h of [daisy, sunny]){ h.happy = 90; h.hunger = 90; }
-    ACT.select(1); ACT.select(2);
-    ACT.breed();
-    expect(daisy.preg).toBeTruthy();
-    expect(st.coins).toBe(150 - BREED_COST);
-  });
-
-  it('unhappy horses cannot breed', () => {
-    daisy.happy = 10; sunny.happy = 90; sunny.hunger = 90;
-    ACT.select(1); ACT.select(2);
-    ACT.breed();
-    expect(daisy.preg).toBeFalsy();
-    expect(st.coins).toBe(150);
   });
 });

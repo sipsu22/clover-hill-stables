@@ -120,6 +120,6 @@ export function clock(t = now()){
 export const clockText = h => `${String(Math.floor(h)).padStart(2,'0')}:${String(Math.floor((h % 1) * 4) * 15).padStart(2,'0')}`;
 export const isDaytime = () => clock().hour < NIGHT;
 export const outCount = () => state.horses.filter(h => h.out).length;
-export const BREED_COST = 40, DNA_COST = 25, REFRESH_COST = 15;
+export const DNA_COST = 25;
 export const SAVE_KEY = 'cloverHillStables_v1';
 

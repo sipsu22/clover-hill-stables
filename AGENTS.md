@@ -28,14 +28,19 @@ js/
   genetics.js     coat-color genetics: phenotype, inheritance, foal odds
   data.js         game data and rules tables: crops, shop, saddles, rugs, weather, bundles, day clock
   state.js        the saved game `state`, horse rules (value, mood, readiness, hunger/happiness decay)
+  affinity.js     friendships between horses (bonds), nature match, love-potion success chance
   game.js         tick(), day/night + paddock rules (dayRules), save()/load() with save migrations
-  ui.js           toasts, popups (showModal/closeModal), small HTML helpers
-  views.js        HTML for each tab, render(), live updates
+  ui.js           toasts, popups (showModal(html, after, refresh) / refreshModal / closeModal), HTML helpers
+  shop.js         Market Hall stalls: daily rotating stock, daily prices (priceOf), stall popups
+  views.js        top bar, the world view (or the ride), horse cards, Horse Book + build popups, render()
   actions.js      ACT: everything a button can do (data-act="…"), click/keyboard dispatch
-  world.js        walkable barn / farm / paddock: map rules, pathfinding, doors, leading horses
-  world-draw.js   drawing the barn, farm, paddock, weather and sky
+  world.js        the walkable world: barn / farm / paddock rules, PLACES registry, pathfinding, doors, leading horses
+  village.js      place: the village (Market Hall door, Heart Barn door, riding arena gate)
+  market-map.js   place: inside the Market Hall (stalls you walk up to)
+  breeding.js     place: the Heart Barn (pens, love table, potion ceremony with curtain + big heart)
+  world-draw.js   drawing the barn, farm, paddock, weather and sky (places draw themselves)
   controls.js     day banner, animation loop, keyboard + touch controls (per-finger tracking)
-  riding.js       riding modes: training, forest trail, show jumping, cross-country race (AI rivals)
+  riding.js       riding: arena-gate menu + modes (training, forest trail, show jumping, cross-country race)
 tests/            Vitest unit tests (*.test.js), setup.js (fake page), helpers.js
 tests/fixtures/saves/  real saved games from every released version (save-migration tests)
 scripts/capture-save.mjs  plays an old version in jsdom and captures its save as a fixture
@@ -49,6 +54,11 @@ scripts/capture-save.mjs  plays an old version in jsdom and captures its save as
 - Keep top-level code free of work that depends on other modules being initialised; put such setup
   in an init function called from `main.js` (see `initControls()`).
 - Buttons use `data-act="name"` + `data-id`/`data-arg`, handled by `ACT.name(id, arg, el)` in `actions.js`.
+- **New places** (a new map you can walk into) get their own module exporting
+  `walk(x, y)`, `door(nx, ny)`, `interact(fx, fy, led)`, `hint(fx, fy, led)`, `click(tx, ty)` and `draw(g, time)`,
+  and are added to `PLACES` in `world.js` (see `village.js`, `market-map.js`, `breeding.js`).
+- Popups that should update after a purchase or a change pass a `refresh` function to `showModal`;
+  `render()` calls `refreshModal()`.
 - All graphics are **pixel maps written directly in code** (strings of characters → colors), not image files.
 - Never use `confirm()`, `alert()` or `prompt()` — the in-app preview blocks them. Use in-game popups (`showModal`).
 - Saved games live in `localStorage` under `SAVE_KEY`. Any change to saved data follows the
@@ -100,9 +110,22 @@ If `scripts/capture-save.mjs` stops working because modules were renamed, update
 
 ## Game design rules from the player (keep these!)
 
+- **No tab bar / menu buttons. Everything is a place you walk to** (the player wants the game to feel
+  exploratory and adventurous): the Market Hall and Heart Barn in the village, the riding arena gate,
+  the Horse Book on a stand in the barn, building stalls at a locked stall, selling crops at the market's
+  produce stand. Add new features as places or things in the world, not as new buttons or tabs.
+- **Breeding** happens in the Heart Barn: lead a mare and a stallion into the two pens, then use a
+  **love potion** (bought at the market's apothecary) at the love table. A curtain closes, hearts float,
+  a big heart grows, and success depends on how much the horses like each other (`affinity.js`:
+  time together in the paddock or pens, being stall neighbors, matching temper / different genes).
+- **The market** stock rotates every game day and prices drift slightly (85%–120%); horses at the dealer
+  are new every morning. A bought horse follows you home on foot (it is not teleported into the barn).
+- **Riding** starts at the arena gate in the village with the horse you led there.
+
 - **Horses never teleport to the paddock.** Every morning the player must walk each horse from its
   stall, out of the barn, past the fields, to the paddock. Leading can only start at the horse's own
-  stall (or by walking up to it in the paddock). No auto turn-out helpers. The only automatic move
+  stall, next to it in the paddock, or at its Heart Barn pen. A horse bought at the market follows you
+  home. No auto turn-out helpers. The only automatic move
   allowed is horses walking back to their stalls at 21:00. (Covered by tests in `tests/world.test.js`
   and `tests/game.test.js`.)
 - Mornings must not feel stressful: the paddock deadline is 12:00, about 4 real minutes after sunrise.

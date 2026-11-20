@@ -4,11 +4,31 @@ import { clamp, mulberry, now } from './util.js';
 import { horseCanvas, itemCanvas, mapCanvas, saddleCanvas } from './sprites.js';
 import { CROPS, NIGHT, clock, rugOK } from './data.js';
 import { byId, isFoal, look, state } from './state.js';
-import { AISLE_BOT, AISLE_TOP, BARN_DOOR_ROWS, COLS, FENCE, HOOKS, PADDOCK, PADDOCK_TREES, PATH, POND, ROWS, SCARECROW, TILE, TREES, TROUGH, WINDOWS, barnWalk, curMap, decorAt, facing, horseNear, isFarmDoor, isFence, isPaddockFence, lead, pdk, pl, placeInPaddock, plotAt, plotPos, stallAt } from './world.js';
+import { AISLE_BOT, AISLE_TOP, BARN_DOOR_ROWS, BOOK_TILE, COLS, FENCE, HOOKS, PADDOCK, PADDOCK_TREES, PATH, PLACES, POND, ROWS, SCARECROW, TILE, TREES, TROUGH, WINDOWS, barnWalk, curMap, decorAt, facing, horseNear, isBookTile, isFarmDoor, isFence, isPaddockFence, lead, pdk, pl, placeInPaddock, plotAt, plotPos, stallAt } from './world.js';
 import { frame } from './controls.js';
 
 /* ---------- drawing the barn ---------- */
 export let bgCanvas = null, bgKey = '';
+// the Horse Book on a wooden stand
+export const BOOKSTAND = [
+  "..............",
+  "..pppppppppp..",
+  ".pwwwwwrwwwwp.",
+  ".pwkkwwrwkkwp.",
+  ".pwwwwwrwwwwp.",
+  ".pwkkkwrwkkwp.",
+  ".pwwwwwrwwwwp.",
+  "..pppppppppp..",
+  "......tt......",
+  "......tt......",
+  "......tt......",
+  "......tt......",
+  ".....tttt.....",
+  "....tTTTTt....",
+  "..............",
+  "..............",
+];
+export const BOOK_COLORS = {p: '#8a2f4f', w: '#fbf5e6', r: '#d0533f', k: '#9a8a78', t: '#8b5a2b', T: '#5e3a1a'};
 export function px(ctx, col, x, y, w=1, h=1){ ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 export function buildBackground(){
   const c = document.createElement('canvas'); c.width = COLS*TILE; c.height = ROWS*TILE;
@@ -168,6 +188,7 @@ export function drawScene(cv, time){
   g.imageSmoothingEnabled = false;
   if (curMap() === 'farm') return drawFarm(g, time);
   if (curMap() === 'paddock') return drawPaddock(g, time);
+  if (PLACES[curMap()]) return PLACES[curMap()].draw(g, time);
   const key = state.cap;
   if (!bgCanvas || bgKey !== key){ bgCanvas = buildBackground(); bgKey = key; }
   g.drawImage(bgCanvas, 0, 0);
@@ -179,7 +200,7 @@ export function drawScene(cv, time){
   // horses in their stalls
   state.horses.slice(0, state.cap).forEach((h, i) => {
     const sx = (i % 8) * 32, sy = i < 8 ? 32 : 128;
-    if (h.out || state.player.leading === h.id){
+    if (h.out || h.pen || state.player.leading === h.id){
       // an empty stall with a little sun sign: "out in the paddock"
       if (h.out){ px(g, '#f5d76e', sx + 13, sy + 10, 6, 6); px(g, '#f5d76e', sx + 15, sy + 7, 2, 12); px(g, '#f5d76e', sx + 10, sy + 12, 12, 2); }
       return;
@@ -198,10 +219,12 @@ export function drawScene(cv, time){
   const [fx, fy] = facing(), st = stallAt(fx, fy);
   if (!pl.moving && Math.floor(time/400) % 2){
     if (st >= 0) drawHighlight(g, (st%8)*32, st < 8 ? 32 : 128, 32, 32);
+    else if (isBookTile(fx, fy)) drawHighlight(g, fx*TILE, fy*TILE - 4, TILE, TILE + 4);
     else if (decorAt(fx, fy) || (state.player.carry && barnWalk(fx, fy))) drawHighlight(g, fx*TILE, fy*TILE, TILE, TILE);
   }
-  // decorations and the farmer, drawn from back to front
+  // decorations, the Horse Book stand and the farmer, drawn from back to front
   const things = state.decor.map(d => ({y: d.y, draw: () => g.drawImage(itemCanvas(d.type), d.x*TILE, d.y*TILE)}));
+  things.push({y: BOOK_TILE[1], draw: () => g.drawImage(mapCanvas('bookstand', BOOKSTAND, BOOK_COLORS), BOOK_TILE[0]*TILE, BOOK_TILE[1]*TILE - 4)});
   things.push(farmerThing(g));
   const lt = ledThing(g, time); if (lt) things.push(lt);
   things.sort((a, b) => a.y - b.y).forEach(t => t.draw());
